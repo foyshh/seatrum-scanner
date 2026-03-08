@@ -105,6 +105,51 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 
 .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(60px); background:#1a6b3a; color:#fff; padding:11px 22px; border-radius:30px; font-family:'Space Mono',monospace; font-size:12px; opacity:0; transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index:99; white-space:nowrap; }
 .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+/* EDIT MODAL */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.5);
+  display:flex; align-items:center; justify-content:center;
+  z-index:999; padding:16px;
+}
+.modal-overlay.hidden { display:none; }
+.modal {
+  background:#fff; border-radius:14px; padding:24px;
+  width:100%; max-width:420px; box-shadow:0 8px 40px rgba(0,0,0,0.2);
+}
+.modal-title {
+  font-family:"Space Mono",monospace; font-size:13px; font-weight:700;
+  color:#1a6b3a; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:18px;
+}
+.modal-field { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
+.modal-label { font-family:"Space Mono",monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#888; }
+.modal-input {
+  padding:10px 12px; border:1.5px solid #e0e0e0; border-radius:8px;
+  font-family:"Space Mono",monospace; font-size:13px; color:#1a1814;
+  background:#fafafa; outline:none;
+}
+.modal-input:focus { border-color:#1a6b3a; background:#fff; }
+.modal-select {
+  padding:10px 12px; border:1.5px solid #e0e0e0; border-radius:8px;
+  font-family:"Space Mono",monospace; font-size:12px; color:#1a1814;
+  background:#fafafa; outline:none; cursor:pointer;
+}
+.modal-btns { display:flex; gap:8px; margin-top:18px; }
+.btn-save {
+  flex:1; padding:12px; background:#1a6b3a; color:#fff; border:none;
+  border-radius:8px; font-family:"Space Mono",monospace; font-size:12px;
+  font-weight:700; cursor:pointer;
+}
+.btn-cancel {
+  padding:12px 20px; background:#f5f5f5; color:#666; border:none;
+  border-radius:8px; font-family:"Space Mono",monospace; font-size:12px;
+  font-weight:700; cursor:pointer;
+}
+.card-foot { border-top:1px dashed #eee; padding:8px 14px; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.btn-edit {
+  background:none; border:none; cursor:pointer; font-size:15px; opacity:0.4; transition:opacity 0.15s;
+}
+.btn-edit:hover { opacity:1; }
 </style>
 </head>
 <body>
@@ -249,7 +294,10 @@ function renderCard(m) {
     </div>
     <div class="card-foot">
       <span class="card-hint">Scan → opens inspection form</span>
-      <button class="btn-del" onclick="removeMachine('${m.id}')" title="Remove">🗑</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-edit" onclick="openEdit('${m.id}')" title="Edit">✏️</button>
+        <button class="btn-del" onclick="removeMachine('${m.id}')" title="Delete">🗑</button>
+      </div>
     </div>
   `;
   document.getElementById('qr-grid').appendChild(card);
@@ -302,6 +350,55 @@ loadSavedMachines();
   document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter') addMachine(); });
 });
 
+
+function openEdit(id) {
+  const m = machines.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('edit-original-id').value = id;
+  document.getElementById('edit-id').value = m.id;
+  document.getElementById('edit-name').value = m.name;
+  document.getElementById('edit-cat').value = m.cat;
+  document.getElementById('edit-loc').value = m.loc || '';
+  document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEdit() {
+  document.getElementById('edit-modal').classList.add('hidden');
+}
+
+function saveEdit() {
+  const originalId = document.getElementById('edit-original-id').value;
+  const newId = document.getElementById('edit-id').value.trim().toUpperCase();
+  const newName = document.getElementById('edit-name').value.trim();
+  const newCat = document.getElementById('edit-cat').value;
+  const newLoc = document.getElementById('edit-loc').value.trim();
+
+  if (!newId || !newName) { alert('Asset ID and Name are required'); return; }
+
+  // Check if new ID conflicts with another machine
+  if (newId !== originalId && machines.find(x => x.id === newId)) {
+    alert('Asset ID ' + newId + ' already exists'); return;
+  }
+
+  // Remove old card and update machines array
+  document.getElementById('card-' + originalId)?.remove();
+  machines = machines.filter(m => m.id !== originalId);
+
+  // Re-add with new details
+  const updated = { id: newId, name: newName, cat: newCat, loc: newLoc };
+  machines.push(updated);
+  saveMachines();
+  updateCount();
+  renderCard(updated);
+  closeEdit();
+  showToast('✓ ' + newId + ' updated!');
+}
+
+// Close modal on overlay click
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
+
 let tt;
 function showToast(msg) {
   const t=document.getElementById('toast');
@@ -309,5 +406,37 @@ function showToast(msg) {
   clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay hidden" id="edit-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Machine</div>
+    <input type="hidden" id="edit-original-id" />
+    <div class="modal-field">
+      <span class="modal-label">Asset ID</span>
+      <input class="modal-input" id="edit-id" type="text" />
+    </div>
+    <div class="modal-field">
+      <span class="modal-label">Machine Name</span>
+      <input class="modal-input" id="edit-name" type="text" />
+    </div>
+    <div class="modal-field">
+      <span class="modal-label">Category</span>
+      <select class="modal-select" id="edit-cat">
+        <option>Equipment</option>
+        <option>Safety Gear</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <span class="modal-label">Location</span>
+      <input class="modal-input" id="edit-loc" type="text" />
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEdit()">Cancel</button>
+      <button class="btn-save" onclick="saveEdit()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
