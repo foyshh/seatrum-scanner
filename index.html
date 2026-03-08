@@ -183,6 +183,18 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 }
 .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
 .toast.err { background:#dc2626; }
+
+/* DUE DATE BANNER */
+.due-banner {
+  border-radius:9px; padding:10px 14px; margin-bottom:14px;
+  font-family:'Space Mono',monospace; font-size:12px; font-weight:700;
+  display:none; align-items:center; gap:8px;
+}
+.due-banner.show { display:flex; }
+.due-banner.ok { background:#f0fdf4; border:1.5px solid #86efac; color:#166534; }
+.due-banner.soon { background:#fffbeb; border:1.5px solid #fcd34d; color:#92400e; }
+.due-banner.overdue { background:#fef2f2; border:1.5px solid #fca5a5; color:#991b1b; }
+.due-icon { font-size:18px; }
 </style>
 </head>
 <body>
@@ -235,6 +247,10 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
           <div class="asset-banner-sub">Fill in details below and submit</div>
           <button onclick="clearAsset()" style="margin-top:10px;background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 14px;border-radius:20px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer">✕ Scan different machine</button>
         </div>
+        <div class="due-banner" id="due-banner">
+          <span class="due-icon" id="due-icon">📅</span>
+          <span id="due-text">—</span>
+        </div>
       </div>
 
       <!-- HANDHELD SCANNER MODE -->
@@ -250,12 +266,8 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
       <!-- INSPECTOR -->
       <span class="field-label">Inspector</span>
       <select class="select" id="inspector">
-        <option>Ahmad Rashid</option>
-        <option>Tan Wei Liang</option>
-        <option>Priya Suresh</option>
-        <option>Lee Min Hui</option>
-        <option>Ravi Kumar</option>
-        <option>Chen Xiao Hua</option>
+        <option>Romjan</option>
+        <option>Foyshal</option>
       </select>
 
       <!-- STATUS -->
@@ -352,10 +364,46 @@ function setAsset(id) {
   document.getElementById('banner-id').textContent = id;
   document.getElementById('asset-banner').style.display = 'block';
   document.getElementById('waiting-state').style.display = 'none';
+  // Show due date countdown if machine data exists
+  showDueDate(id);
+}
+
+function showDueDate(id) {
+  const banner = document.getElementById('due-banner');
+  try {
+    const saved = localStorage.getItem('seatrum_machines');
+    if (!saved) { banner.className='due-banner'; return; }
+    const machines = JSON.parse(saved);
+    const m = machines.find(x => x.id === id);
+    if (!m || !m.due) { banner.className='due-banner'; return; }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d = new Date(m.due); d.setHours(0,0,0,0);
+    const diff = Math.round((d - today) / (1000*60*60*24));
+    const icon = document.getElementById('due-icon');
+    const text = document.getElementById('due-text');
+    if (diff < 0) {
+      banner.className='due-banner show overdue';
+      icon.textContent='🚨';
+      text.textContent='Overdue by '+Math.abs(diff)+' day'+(Math.abs(diff)!==1?'s':'')+'!';
+    } else if (diff === 0) {
+      banner.className='due-banner show overdue';
+      icon.textContent='⚠️';
+      text.textContent='Inspection due TODAY!';
+    } else if (diff <= 7) {
+      banner.className='due-banner show soon';
+      icon.textContent='⏰';
+      text.textContent='Due in '+diff+' day'+(diff!==1?'s':'')+' — '+m.due;
+    } else {
+      banner.className='due-banner show ok';
+      icon.textContent='📅';
+      text.textContent='Next due: '+m.due+' ('+diff+' days)';
+    }
+  } catch(e) { banner.className='due-banner'; }
 }
 function clearAsset() {
   currentAssetId = '';
   document.getElementById('asset-banner').style.display = 'none';
+  document.getElementById('due-banner').className = 'due-banner';
   document.getElementById('waiting-state').style.display = 'block';
   window.history.replaceState({}, '', window.location.pathname);
 }
@@ -448,6 +496,17 @@ function tog(el) {
   el.querySelector('.cl-box').textContent = el.classList.contains('checked')?'✓':'';
 }
 
+// ── GET DUE DATE FOR SUBMISSION ──
+function getDueDateForId(id) {
+  try {
+    const saved = localStorage.getItem('seatrum_machines');
+    if (!saved) return '';
+    const machines = JSON.parse(saved);
+    const m = machines.find(x => x.id === id);
+    return m && m.due ? m.due : '';
+  } catch(e) { return ''; }
+}
+
 // ── SUBMIT ──
 async function submitScan() {
   if (!currentAssetId) { showToast('⚠ Scan a QR code first!', true); return; }
@@ -468,7 +527,7 @@ async function submitScan() {
       await fetch(scriptUrl, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ assetId:id, machineName:'', category:'', date, time, inspector, checklist:`${checked}/${items.length}`, status:currentStatus })
+        body: JSON.stringify({ assetId:id, machineName:'', category:'', date, time, inspector, checklist:`${checked}/${items.length}`, status:currentStatus, dueDate:getDueDateForId(id) })
       });
       showToast('✓ '+id+' saved to Sheets!');
       addLog(currentStatus.toLowerCase(), id, inspector+' · '+checked+'/'+items.length+' checks', time);
