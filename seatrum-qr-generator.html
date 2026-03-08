@@ -2,537 +2,292 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Seatrum Scanner</title>
-<!-- ZXing is far more reliable on Android Chrome than jsQR -->
-<script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seatrum — QR Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 
 .header {
-  background:#1a6b3a; padding:14px 20px;
-  display:flex; align-items:center; justify-content:space-between;
+  background:#1a6b3a; padding:14px 24px;
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
 }
 .logo { font-family:'Space Mono',monospace; font-size:15px; font-weight:700; color:#fff; letter-spacing:0.1em; }
 .logo span { opacity:0.5; }
-.clock { font-family:'Space Mono',monospace; font-size:11px; color:rgba(255,255,255,0.6); }
+.header-btns { display:flex; gap:10px; flex-wrap:wrap; }
+.btn { padding:8px 16px; border-radius:6px; cursor:pointer; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; border:none; transition:all 0.2s; }
+.btn-white { background:#fff; color:#1a6b3a; }
+.btn-outline { background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,0.4); }
 
-/* SETUP */
-.setup-bar {
-  background:#fff8e1; border-bottom:2px solid #ffc107;
-  padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+/* URL CONFIG BAR */
+.url-bar {
+  background:#e8f4ed; border-bottom:2px solid #86efac;
+  padding:10px 24px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
 }
-.setup-bar.hidden { display:none; }
-.setup-group { display:flex; flex-direction:column; gap:4px; flex:1; min-width:200px; }
-.setup-label { font-family:'Space Mono',monospace; font-size:10px; color:#7a5c00; text-transform:uppercase; }
-.setup-input {
-  padding:9px 12px; border:1.5px solid #ddd; border-radius:6px;
-  font-family:'Space Mono',monospace; font-size:12px; outline:none;
-  width:100%;
+.url-label { font-family:'Space Mono',monospace; font-size:10px; color:#166534; text-transform:uppercase; white-space:nowrap; }
+.url-input {
+  flex:1; min-width:200px; padding:7px 12px;
+  border:1.5px solid #86efac; border-radius:6px;
+  font-family:'Space Mono',monospace; font-size:11px; color:#166534;
+  background:#fff; outline:none;
 }
-.setup-input:focus { border-color:#1a6b3a; }
-.btn-connect {
-  padding:10px 20px; background:#1a6b3a; color:#fff; border:none;
-  border-radius:6px; font-family:'Space Mono',monospace; font-size:11px;
-  font-weight:700; cursor:pointer; white-space:nowrap;
-}
+.url-input:focus { border-color:#1a6b3a; }
+.btn-url { padding:8px 16px; background:#1a6b3a; color:#fff; border:none; border-radius:6px; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; cursor:pointer; }
 
-/* MAIN */
-.main { padding:16px; max-width:480px; margin:0 auto; }
+.main { max-width:960px; margin:0 auto; padding:24px 16px 40px; }
+
+/* FORM */
+.form-card {
+  background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.07);
+  padding:20px 22px; margin-bottom:22px;
+}
+.form-title { font-family:'Space Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:14px; }
+.form-row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.form-group { display:flex; flex-direction:column; gap:5px; flex:1; min-width:120px; }
+.form-label { font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#888; }
+.form-input {
+  padding:10px 12px; border:1.5px solid #e0e0e0; border-radius:8px;
+  font-family:'Space Mono',monospace; font-size:13px; color:#1a1814;
+  background:#fafafa; outline:none; transition:border-color 0.2s;
+}
+.form-input:focus { border-color:#1a6b3a; background:#fff; }
+.form-input::placeholder { color:#ccc; font-size:11px; }
+.form-select {
+  padding:10px 12px; border:1.5px solid #e0e0e0; border-radius:8px;
+  font-family:'Space Mono',monospace; font-size:12px; color:#1a1814;
+  background:#fafafa; outline:none; cursor:pointer;
+}
+.btn-add { padding:10px 20px; background:#1a6b3a; color:#fff; border:none; border-radius:8px; font-family:'Space Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.btn-add:hover { background:#155c2f; }
+
+/* HEADER ROW */
+.list-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.list-title { font-family:'Space Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#888; }
+.count-badge { background:#1a6b3a; color:#fff; border-radius:20px; padding:2px 12px; font-family:'Space Mono',monospace; font-size:11px; }
+
+/* GRID */
+.qr-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; }
 
 /* CARD */
-.card {
-  background:#fff; border-radius:14px;
-  box-shadow:0 2px 16px rgba(0,0,0,0.08); overflow:hidden; margin-bottom:16px;
-}
-.card-header {
-  background:#1a6b3a; padding:13px 18px;
-  font-family:'Space Mono',monospace; font-size:11px;
-  color:#fff; letter-spacing:0.08em; text-transform:uppercase;
-}
-.card-body { padding:18px; }
+.qr-card { background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.07); overflow:hidden; position:relative; transition:box-shadow 0.2s; }
+.qr-card:hover { box-shadow:0 6px 24px rgba(0,0,0,0.12); }
+.card-top { background:#1a6b3a; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
+.card-co { font-family:'Space Mono',monospace; font-size:9px; color:rgba(255,255,255,0.7); letter-spacing:0.1em; }
+.cat-pill { font-family:'Space Mono',monospace; font-size:8px; font-weight:700; padding:2px 8px; border-radius:10px; text-transform:uppercase; }
+.cat-equip { background:rgba(255,255,255,0.2); color:#fff; }
+.cat-safety { background:rgba(255,140,80,0.4); color:#ffe8d6; }
+.cat-other { background:rgba(100,255,100,0.2); color:#d0ffd0; }
+.card-body { padding:14px; text-align:center; }
+.qr-wrap { display:inline-flex; align-items:center; justify-content:center; border:1px solid #f0f0f0; border-radius:8px; padding:8px; background:#fff; margin-bottom:10px; }
+.card-id { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:#1a6b3a; display:block; margin-bottom:2px; }
+.card-name { font-size:12px; font-weight:600; color:#333; display:block; margin-bottom:2px; line-height:1.3; }
+.card-loc { font-size:10px; color:#999; font-family:'Space Mono',monospace; display:block; }
+.card-url { font-size:9px; color:#bbb; font-family:'Space Mono',monospace; display:block; margin-top:4px; word-break:break-all; }
+.card-foot { border-top:1px dashed #eee; padding:8px 14px; display:flex; align-items:center; justify-content:space-between; }
+.card-hint { font-size:10px; color:#aaa; }
+.btn-del { background:none; border:none; cursor:pointer; font-size:15px; opacity:0.3; }
+.btn-del:hover { opacity:1; }
 
-/* MODE TABS */
-.tabs { display:flex; gap:8px; margin-bottom:16px; }
-.tab {
-  flex:1; padding:10px 8px; border-radius:8px; border:2px solid #e0e0e0;
-  font-family:'Space Mono',monospace; font-size:11px; font-weight:700;
-  cursor:pointer; background:#fafafa; color:#888; text-align:center; transition:all 0.2s;
-}
-.tab.active { background:#1a6b3a; border-color:#1a6b3a; color:#fff; }
+.empty { text-align:center; padding:50px 20px; font-family:'Space Mono',monospace; font-size:12px; color:#bbb; background:#fff; border-radius:12px; }
+.empty-icon { font-size:36px; margin-bottom:10px; display:block; opacity:0.4; }
 
-/* CAMERA */
-.camera-wrap {
-  position:relative; width:100%; border-radius:12px;
-  overflow:hidden; background:#000; margin-bottom:10px;
-  aspect-ratio:1;
+@media print {
+  .header,.url-bar,.form-card,.list-header,.btn-del,.card-foot,.card-url { display:none !important; }
+  body { background:#fff; }
+  .main { padding:5mm; }
+  .qr-grid { grid-template-columns:repeat(3,1fr); gap:6mm; }
+  .qr-card { break-inside:avoid; box-shadow:none; border:1pt solid #ddd; }
+  .card-top { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  @page { margin:8mm; size:A4; }
 }
-video { width:100%; height:100%; object-fit:cover; display:block; }
 
-/* Animated scan overlay */
-.overlay {
-  position:absolute; inset:0;
-  display:flex; align-items:center; justify-content:center;
-  pointer-events:none;
-}
-.frame {
-  width:60%; height:60%; position:relative;
-}
-.frame::before, .frame::after,
-.frame-inner::before, .frame-inner::after {
-  content:''; position:absolute; width:22px; height:22px;
-  border-color:#fff; border-style:solid;
-}
-.frame::before { top:0; left:0; border-width:3px 0 0 3px; border-radius:4px 0 0 0; }
-.frame::after  { top:0; right:0; border-width:3px 3px 0 0; border-radius:0 4px 0 0; }
-.frame-inner::before { bottom:0; left:0; border-width:0 0 3px 3px; border-radius:0 0 0 4px; }
-.frame-inner::after  { bottom:0; right:0; border-width:0 3px 3px 0; border-radius:0 0 4px 0; }
-.scan-bar {
-  position:absolute; left:0; right:0; height:3px;
-  background:linear-gradient(90deg,transparent,#39ff14,transparent);
-  top:0; animation:bar 2s ease-in-out infinite;
-  box-shadow:0 0 8px #39ff14;
-}
-@keyframes bar { 0%{top:5%} 100%{top:90%} }
-
-.camera-status {
-  text-align:center; font-family:'Space Mono',monospace;
-  font-size:11px; color:#888; margin-bottom:12px; min-height:16px;
-}
-.camera-status.detected { color:#1a6b3a; font-weight:700; }
-
-.btn-cam {
-  width:100%; padding:13px; border:none; border-radius:9px;
-  font-family:'Space Mono',monospace; font-size:12px; font-weight:700;
-  cursor:pointer; transition:all 0.2s; margin-bottom:4px;
-  background:#1a6b3a; color:#fff;
-}
-.btn-cam.stop { background:#dc2626; }
-
-/* HANDHELD */
-.scan-input {
-  width:100%; padding:15px 18px; border:2px solid #e0e0e0; border-radius:10px;
-  font-family:'Space Mono',monospace; font-size:17px; font-weight:700;
-  color:#1a6b3a; outline:none; text-align:center; background:#f9fff9;
-  margin-bottom:8px; transition:all 0.2s;
-}
-.scan-input:focus { border-color:#1a6b3a; background:#fff; }
-.scan-input::placeholder { color:#ccc; font-size:13px; font-weight:400; }
-.scan-input.flash { animation:flash 0.4s ease; }
-@keyframes flash { 0%,100%{background:#fff} 50%{background:#d4f5e0} }
-.hint { font-size:11px; color:#aaa; text-align:center; margin-bottom:14px; font-family:'Space Mono',monospace; }
-
-/* SCANNED BADGE */
-.badge {
-  background:#f0fdf4; border:2px solid #86efac; border-radius:9px;
-  padding:11px 14px; margin-bottom:14px;
-  display:none; align-items:center; justify-content:space-between;
-  animation:pop 0.3s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes pop { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
-.badge.show { display:flex; }
-.badge-id { font-family:'Space Mono',monospace; font-size:16px; font-weight:700; color:#1a6b3a; }
-.badge-clear { background:none; border:none; cursor:pointer; color:#999; font-size:18px; line-height:1; }
-
-/* FORM FIELDS */
-.field-label {
-  font-family:'Space Mono',monospace; font-size:10px;
-  text-transform:uppercase; letter-spacing:0.1em; color:#888;
-  margin-bottom:5px; display:block;
-}
-.select {
-  width:100%; padding:10px 13px; border:1.5px solid #e0e0e0; border-radius:8px;
-  font-size:14px; color:#1a1814; background:#fafafa; outline:none;
-  cursor:pointer; margin-bottom:14px;
-}
-.select:focus { border-color:#1a6b3a; }
-
-/* STATUS */
-.status-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
-.s-btn {
-  padding:11px 6px; border-radius:8px; border:2px solid #e0e0e0;
-  font-family:'Space Mono',monospace; font-size:11px; font-weight:700;
-  cursor:pointer; background:#fafafa; text-align:center; transition:all 0.15s;
-}
-.s-btn.pass { background:#d4f5e0; border-color:#1a6b3a; color:#1a6b3a; }
-.s-btn.flag { background:#fff3cd; border-color:#f59e0b; color:#92400e; }
-.s-btn.fail { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
-
-/* CHECKLIST */
-.checklist { display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
-.cl {
-  display:flex; align-items:center; gap:10px; padding:10px 12px;
-  background:#f9f9f9; border:1.5px solid #ececec; border-radius:8px; cursor:pointer;
-}
-.cl.checked { background:#f0fdf4; border-color:#bbf7d0; }
-.cl-box {
-  width:20px; height:20px; border-radius:5px; border:2px solid #ccc;
-  display:flex; align-items:center; justify-content:center;
-  flex-shrink:0; font-size:12px; transition:all 0.15s;
-}
-.cl.checked .cl-box { background:#1a6b3a; border-color:#1a6b3a; color:#fff; }
-.cl-text { font-size:13px; color:#333; }
-.cl.checked .cl-text { color:#aaa; text-decoration:line-through; }
-
-/* SUBMIT */
-.btn-submit {
-  width:100%; padding:15px; background:#1a6b3a; color:#fff; border:none;
-  border-radius:11px; font-family:'Space Mono',monospace; font-size:13px;
-  font-weight:700; cursor:pointer; transition:all 0.2s; letter-spacing:0.04em;
-}
-.btn-submit:active { transform:scale(0.98); }
-.btn-submit:disabled { background:#ccc; }
-.btn-submit.syncing { background:#2563eb; }
-
-/* CONN */
-.conn {
-  display:flex; align-items:center; gap:7px; padding:9px 18px;
-  background:#f0fdf4; border-top:1px solid #dcfce7;
-  font-family:'Space Mono',monospace; font-size:10px; color:#666;
-}
-.dot { width:8px; height:8px; border-radius:50%; background:#ccc; flex-shrink:0; }
-.dot.on { background:#22c55e; animation:pg 2s infinite; }
-@keyframes pg { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
-
-/* LOG */
-.log-list { max-height:280px; overflow-y:auto; }
-.log-item {
-  padding:10px 12px; border-radius:8px; margin-bottom:8px;
-  border-left:3px solid #ccc; background:#fafafa; animation:li 0.3s ease;
-}
-@keyframes li { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:none} }
-.log-item.pass { border-color:#1a6b3a; background:#f0fdf4; }
-.log-item.flag { border-color:#f59e0b; background:#fffbeb; }
-.log-item.fail { border-color:#ef4444; background:#fef2f2; }
-.log-item.info { border-color:#3b82f6; background:#eff6ff; }
-.log-id { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; }
-.log-meta { font-size:12px; color:#666; margin-top:2px; }
-.log-time { font-family:'Space Mono',monospace; font-size:10px; color:#aaa; margin-top:3px; }
-.log-badge { float:right; font-family:'Space Mono',monospace; font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; }
-.log-badge.pass { background:#dcfce7; color:#166534; }
-.log-badge.flag { background:#fef3c7; color:#92400e; }
-.log-badge.fail { background:#fee2e2; color:#991b1b; }
-.log-count { font-family:'Space Mono',monospace; font-size:11px; background:#1a6b3a; color:#fff; padding:2px 10px; border-radius:10px; }
-
-/* TOAST */
-.toast {
-  position:fixed; bottom:28px; left:50%;
-  transform:translateX(-50%) translateY(70px);
-  background:#1a6b3a; color:#fff; padding:13px 24px; border-radius:30px;
-  font-family:'Space Mono',monospace; font-size:12px; opacity:0;
-  transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-  box-shadow:0 4px 24px rgba(0,0,0,0.25); z-index:999; white-space:nowrap;
-  max-width:90vw; text-align:center;
-}
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(60px); background:#1a6b3a; color:#fff; padding:11px 22px; border-radius:30px; font-family:'Space Mono',monospace; font-size:12px; opacity:0; transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1); z-index:99; white-space:nowrap; }
 .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
-.toast.err { background:#dc2626; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <span class="logo">SEAT<span>RUM</span> · Scanner</span>
-  <span class="clock" id="clock"></span>
+  <span class="logo">SEAT<span>RUM</span> · QR Generator</span>
+  <div class="header-btns">
+    <button class="btn btn-outline" onclick="loadDefaults()">+ Load Default Machines</button>
+    <button class="btn btn-white" onclick="window.print()">🖨 Print All</button>
+  </div>
 </div>
 
-<div class="setup-bar" id="setup-bar">
-  <span style="font-size:20px">🔑</span>
-  <div class="setup-group">
-    <span class="setup-label">Apps Script Web App URL</span>
-    <input class="setup-input" id="script-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
-  </div>
-  <button class="btn-connect" onclick="connect()">▶ CONNECT</button>
-  <button onclick="document.getElementById('setup-bar').classList.add('hidden')" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer">✕</button>
+<!-- SCANNER URL CONFIG -->
+<div class="url-bar">
+  <span class="url-label">🔗 Scanner URL</span>
+  <input class="url-input" id="base-url" value="https://foyshh.github.io/seatrum-scanner/" />
+  <button class="btn-url" onclick="regenAll()">↻ Regenerate All QR</button>
 </div>
 
 <div class="main">
-
-  <!-- SCANNER CARD -->
-  <div class="card">
-    <div class="card-header">📷 Scan Machine QR Code</div>
-    <div class="card-body">
-
-      <!-- TABS -->
-      <div class="tabs">
-        <div class="tab active" id="tab-cam" onclick="setMode('camera')">📱 Camera</div>
-        <div class="tab" id="tab-hand" onclick="setMode('handheld')">🔫 Handheld</div>
+  <div class="form-card">
+    <div class="form-title">➕ Add a Machine</div>
+    <div class="form-row">
+      <div class="form-group" style="max-width:120px;">
+        <span class="form-label">Asset ID</span>
+        <input type="text" class="form-input" id="in-id" placeholder="EQP-0012" />
       </div>
-
-      <!-- CAMERA MODE -->
-      <div id="cam-section">
-        <div class="camera-wrap">
-          <video id="video" playsinline muted autoplay></video>
-          <div class="overlay">
-            <div class="frame">
-              <div class="frame-inner"></div>
-              <div class="scan-bar"></div>
-            </div>
-          </div>
-        </div>
-        <div class="camera-status" id="cam-status">Tap Start Camera below</div>
-        <button class="btn-cam" id="btn-cam" onclick="toggleCamera()">▶ Start Camera</button>
+      <div class="form-group" style="flex:2;">
+        <span class="form-label">Machine Name</span>
+        <input type="text" class="form-input" id="in-name" placeholder="Hydraulic Lift Unit A" />
       </div>
-
-      <!-- HANDHELD MODE -->
-      <div id="hand-section" style="display:none">
-        <input type="text" class="scan-input" id="scan-input" placeholder="Waiting for scan..." autocomplete="off" />
-        <div class="hint">Point handheld scanner at QR — auto-fills instantly</div>
+      <div class="form-group">
+        <span class="form-label">Category</span>
+        <select class="form-select" id="in-cat">
+          <option>Equipment</option>
+          <option>Safety Gear</option>
+          <option>Other</option>
+        </select>
       </div>
-
-      <!-- SCANNED BADGE -->
-      <div class="badge" id="badge">
-        <span class="badge-id" id="badge-id">—</span>
-        <button class="badge-clear" onclick="clearScan()">✕</button>
+      <div class="form-group">
+        <span class="form-label">Location</span>
+        <input type="text" class="form-input" id="in-loc" placeholder="Workshop Bay 1" />
       </div>
-
-      <!-- INSPECTOR -->
-      <span class="field-label">Inspector</span>
-      <select class="select" id="inspector">
-        <option>Ahmad Rashid</option>
-        <option>Tan Wei Liang</option>
-        <option>Priya Suresh</option>
-        <option>Lee Min Hui</option>
-        <option>Ravi Kumar</option>
-        <option>Chen Xiao Hua</option>
-      </select>
-
-      <!-- STATUS -->
-      <span class="field-label">Status</span>
-      <div class="status-row">
-        <div class="s-btn pass" id="s-pass" onclick="setStatus('PASS')">✓ PASS</div>
-        <div class="s-btn" id="s-flag" onclick="setStatus('FLAG')">⚠ FLAG</div>
-        <div class="s-btn" id="s-fail" onclick="setStatus('FAIL')">✗ FAIL</div>
-      </div>
-
-      <!-- CHECKLIST -->
-      <span class="field-label">Checklist</span>
-      <div class="checklist">
-        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Visual damage check</span></div>
-        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Safety mechanisms functional</span></div>
-        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Fluid / pressure levels ok</span></div>
-        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Emergency stop tested</span></div>
-        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Labels & tags legible</span></div>
-      </div>
-
-      <button class="btn-submit" id="btn-submit" onclick="submitScan()">↑ SUBMIT TO GOOGLE SHEETS</button>
-    </div>
-    <div class="conn">
-      <div class="dot" id="dot"></div>
-      <span id="conn-text">Not connected — enter URL above</span>
+      <button class="btn-add" onclick="addMachine()">+ Generate QR</button>
     </div>
   </div>
 
-  <!-- LOG CARD -->
-  <div class="card">
-    <div class="card-body">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <span style="font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#888;">📋 Submission Log</span>
-        <span class="log-count" id="log-count">0</span>
-      </div>
-      <div class="log-list" id="log-list">
-        <div class="log-item info">
-          <div class="log-id">System Ready</div>
-          <div class="log-meta">Tap Start Camera to begin scanning</div>
-        </div>
-      </div>
-    </div>
+  <div class="list-header">
+    <span class="list-title">Generated QR Codes</span>
+    <span class="count-badge" id="count">0 machines</span>
   </div>
 
+  <div class="qr-grid" id="qr-grid">
+    <div class="empty" id="empty">
+      <span class="empty-icon">📋</span>
+      No machines yet.<br>Add one above or click "Load Default Machines".
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-let scriptUrl = '', currentStatus = 'PASS', currentAssetId = '';
-let scanBuffer = '', scanTimer = null, logCount = 0;
-let codeReader = null, cameraActive = false;
-let currentMode = 'camera';
+const DEFAULTS = [
+  {id:'EQP-0012',name:'Hydraulic Lift Unit A',cat:'Equipment',loc:'Workshop Bay 1'},
+  {id:'EQP-0034',name:'Air Compressor MK3',cat:'Equipment',loc:'Workshop Bay 2'},
+  {id:'EQP-0056',name:'Forklift Unit #3',cat:'Equipment',loc:'Warehouse Floor'},
+  {id:'SFT-0007',name:'Fall Harness Set #7',cat:'Safety Gear',loc:'Safety Cabinet A'},
+  {id:'SFT-0021',name:'Fire Extinguisher B3',cat:'Safety Gear',loc:'Level 2 Corridor'},
+  {id:'AST-0055',name:'Mobile Work Platform',cat:'Other',loc:'Storage Yard'},
+];
 
-// Clock
-function tick() {
-  document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('en-SG',{timeZone:'Asia/Singapore',hour12:false})+' SGT';
-}
-tick(); setInterval(tick, 1000);
+let machines = [];
 
-// Connect
-function connect() {
-  const url = document.getElementById('script-url').value.trim();
-  if (!url.startsWith('https://script.google.com')) { showToast('⚠ Invalid URL', true); return; }
-  scriptUrl = url;
-  localStorage.setItem('seatrum_url', url);
-  document.getElementById('dot').className = 'dot on';
-  document.getElementById('conn-text').textContent = 'Connected to Google Sheets ✓';
-  document.getElementById('setup-bar').classList.add('hidden');
-  showToast('✓ Connected! Ready to scan.');
-}
-const saved = localStorage.getItem('seatrum_url');
-if (saved) { scriptUrl=saved; document.getElementById('script-url').value=saved; connect(); }
-
-// Mode
-function setMode(m) {
-  currentMode = m;
-  document.getElementById('tab-cam').className  = 'tab'+(m==='camera'?' active':'');
-  document.getElementById('tab-hand').className = 'tab'+(m==='handheld'?' active':'');
-  document.getElementById('cam-section').style.display  = m==='camera'?'block':'none';
-  document.getElementById('hand-section').style.display = m==='handheld'?'block':'none';
-  if (m==='handheld') { stopCamera(); document.getElementById('scan-input').focus(); }
+function getBaseUrl() {
+  let url = document.getElementById('base-url').value.trim();
+  if (!url.endsWith('/')) url += '/';
+  return url;
 }
 
-// ── CAMERA using ZXing (much better Android support) ──
-async function toggleCamera() {
-  if (cameraActive) { stopCamera(); return; }
+function getScanUrl(id) {
+  return getBaseUrl() + '?id=' + encodeURIComponent(id);
+}
 
-  document.getElementById('cam-status').textContent = 'Starting camera...';
-  document.getElementById('btn-cam').textContent = '⏳ Starting...';
+function catPill(cat) {
+  if (cat==='Equipment') return 'cat-equip';
+  if (cat==='Safety Gear') return 'cat-safety';
+  return 'cat-other';
+}
 
-  try {
-    // ZXing BrowserMultiFormatReader — works great on Android Chrome
-    codeReader = new ZXing.BrowserMultiFormatReader();
+function addMachine(data) {
+  const m = data || {
+    id: document.getElementById('in-id').value.trim().toUpperCase(),
+    name: document.getElementById('in-name').value.trim(),
+    cat: document.getElementById('in-cat').value,
+    loc: document.getElementById('in-loc').value.trim(),
+  };
+  if (!m.id||!m.name) { showToast('⚠ Enter Asset ID and Machine Name'); return; }
+  if (machines.find(x=>x.id===m.id)) { showToast('⚠ '+m.id+' already exists'); return; }
+  machines.push(m);
+  updateCount();
+  renderCard(m);
+  if (!data) {
+    document.getElementById('in-id').value='';
+    document.getElementById('in-name').value='';
+    document.getElementById('in-loc').value='';
+    document.getElementById('in-id').focus();
+    showToast('✓ QR generated for '+m.id);
+  }
+}
 
-    const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
-    // Prefer back camera
-    const backCam = devices.find(d => /back|rear|environment/i.test(d.label)) || devices[devices.length-1];
-    const deviceId = backCam ? backCam.deviceId : undefined;
+function renderCard(m) {
+  document.getElementById('empty')?.remove();
+  const scanUrl = getScanUrl(m.id);
+  const card = document.createElement('div');
+  card.className='qr-card'; card.id='card-'+m.id;
+  card.innerHTML=`
+    <div class="card-top">
+      <span class="card-co">SEATRUM · SG</span>
+      <span class="cat-pill ${catPill(m.cat)}">${m.cat}</span>
+    </div>
+    <div class="card-body">
+      <div class="qr-wrap" id="qr-${m.id}"></div>
+      <span class="card-id">${m.id}</span>
+      <span class="card-name">${m.name}</span>
+      <span class="card-loc">📍 ${m.loc||'—'}</span>
+    </div>
+    <div class="card-foot">
+      <span class="card-hint">Scan → opens inspection form</span>
+      <button class="btn-del" onclick="removeMachine('${m.id}')" title="Remove">🗑</button>
+    </div>
+  `;
+  document.getElementById('qr-grid').appendChild(card);
 
-    await codeReader.decodeFromVideoDevice(deviceId, 'video', (result, err) => {
-      if (result) {
-        const id = result.getText().trim().toUpperCase();
-        setScannedId(id);
-        // pause briefly then resume
-        setTimeout(() => {}, 2000);
-      }
+  // QR encodes the FULL scanner URL with ?id=
+  setTimeout(() => {
+    new QRCode(document.getElementById('qr-'+m.id), {
+      text: scanUrl,
+      width: 150, height: 150,
+      colorDark: '#1a6b3a',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M,
     });
+  }, 60);
+}
 
-    cameraActive = true;
-    document.getElementById('btn-cam').textContent = '⏹ Stop Camera';
-    document.getElementById('btn-cam').className = 'btn-cam stop';
-    document.getElementById('cam-status').textContent = 'Point camera at QR code';
+function regenAll() {
+  // Regenerate QR codes with updated base URL
+  machines.forEach(m => {
+    const wrap = document.getElementById('qr-'+m.id);
+    if (wrap) { wrap.innerHTML=''; new QRCode(wrap,{text:getScanUrl(m.id),width:150,height:150,colorDark:'#1a6b3a',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M}); }
+  });
+  showToast('✓ All QR codes updated!');
+}
 
-  } catch(e) {
-    document.getElementById('cam-status').textContent = 'Camera error: ' + e.message;
-    document.getElementById('btn-cam').textContent = '▶ Start Camera';
-    document.getElementById('btn-cam').className = 'btn-cam';
-    showToast('⚠ Camera error — allow camera access', true);
+function removeMachine(id) {
+  document.getElementById('card-'+id)?.remove();
+  machines = machines.filter(m=>m.id!==id);
+  updateCount();
+  if (machines.length===0) {
+    document.getElementById('qr-grid').innerHTML=`<div class="empty" id="empty"><span class="empty-icon">📋</span>No machines yet.</div>`;
   }
 }
 
-function stopCamera() {
-  if (codeReader) { try { codeReader.reset(); } catch(e){} codeReader=null; }
-  cameraActive = false;
-  document.getElementById('btn-cam').textContent = '▶ Start Camera';
-  document.getElementById('btn-cam').className = 'btn-cam';
-  document.getElementById('cam-status').textContent = 'Tap Start Camera below';
+function loadDefaults() {
+  DEFAULTS.forEach(m=>{ if(!machines.find(x=>x.id===m.id)) addMachine(m); });
+  showToast('✓ Default machines loaded');
 }
 
-// Handheld keystrokes
-document.addEventListener('keydown', function(e) {
-  if (currentMode !== 'handheld') return;
-  if (['script-url'].includes(document.activeElement?.id)) return;
-  if (document.activeElement?.tagName === 'SELECT') return;
-  if (e.key === 'Enter') {
-    const val = scanBuffer.trim() || document.getElementById('scan-input').value.trim();
-    if (val.length > 1) setScannedId(val.toUpperCase());
-    scanBuffer = ''; return;
-  }
-  if (e.key.length === 1) {
-    scanBuffer += e.key;
-    clearTimeout(scanTimer);
-    scanTimer = setTimeout(()=>{ scanBuffer=''; }, 100);
-  }
-});
-document.getElementById('scan-input').addEventListener('keydown', function(e) {
-  if (e.key==='Enter' && this.value.trim()) setScannedId(this.value.trim().toUpperCase());
+function updateCount() {
+  const n=machines.length;
+  document.getElementById('count').textContent=n+' machine'+(n!==1?'s':'');
+}
+
+['in-id','in-name','in-loc'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter') addMachine(); });
 });
 
-// Set ID
-function setScannedId(id) {
-  if (!id) return;
-  currentAssetId = id;
-  document.getElementById('scan-input').value = id;
-  document.getElementById('scan-input').classList.add('flash');
-  setTimeout(()=>document.getElementById('scan-input').classList.remove('flash'),400);
-  document.getElementById('badge-id').textContent = '✓ ' + id;
-  document.getElementById('badge').classList.add('show');
-  document.getElementById('cam-status').textContent = '✓ Detected: ' + id;
-  document.getElementById('cam-status').className = 'camera-status detected';
-  showToast('📷 Scanned: ' + id);
-}
-
-function clearScan() {
-  currentAssetId = '';
-  document.getElementById('scan-input').value = '';
-  document.getElementById('badge').classList.remove('show');
-  document.getElementById('cam-status').textContent = 'Point camera at QR code';
-  document.getElementById('cam-status').className = 'camera-status';
-}
-
-// Status
-function setStatus(s) {
-  currentStatus = s;
-  document.getElementById('s-pass').className = 's-btn'+(s==='PASS'?' pass':'');
-  document.getElementById('s-flag').className = 's-btn'+(s==='FLAG'?' flag':'');
-  document.getElementById('s-fail').className = 's-btn'+(s==='FAIL'?' fail':'');
-}
-
-// Checklist
-function tog(el) {
-  el.classList.toggle('checked');
-  el.querySelector('.cl-box').textContent = el.classList.contains('checked')?'✓':'';
-}
-
-// Submit
-async function submitScan() {
-  const assetId = (currentAssetId||document.getElementById('scan-input').value.trim()).toUpperCase();
-  if (!assetId) { showToast('⚠ Scan a QR code first!', true); return; }
-
-  const inspector = document.getElementById('inspector').value;
-  const items = document.querySelectorAll('.cl');
-  const checked = [...items].filter(i=>i.classList.contains('checked')).length;
-  const now = new Date();
-  const sg = {timeZone:'Asia/Singapore',hour12:false};
-  const date = now.toLocaleDateString('en-SG',{...sg,day:'2-digit',month:'short',year:'numeric'});
-  const time = now.toLocaleTimeString('en-SG',sg);
-
-  const btn = document.getElementById('btn-submit');
-  btn.disabled=true; btn.textContent='⏳ Sending...'; btn.classList.add('syncing');
-
-  if (scriptUrl) {
-    try {
-      await fetch(scriptUrl, {
-        method:'POST', mode:'no-cors',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({assetId,date,time,inspector,checklist:`${checked}/${items.length}`,status:currentStatus})
-      });
-      showToast('✓ '+assetId+' saved to Google Sheets!');
-      addLog(currentStatus.toLowerCase(), assetId, inspector+' · '+checked+'/'+items.length, time);
-    } catch(e) { showToast('❌ Sync failed', true); }
-  } else { showToast('⚠ Not connected!', true); }
-
-  btn.disabled=false; btn.textContent='↑ SUBMIT TO GOOGLE SHEETS'; btn.classList.remove('syncing');
-  clearScan();
-  document.querySelectorAll('.cl').forEach(el=>{ el.classList.add('checked'); el.querySelector('.cl-box').textContent='✓'; });
-  setStatus('PASS');
-}
-
-// Log
-function addLog(type,id,meta,time) {
-  logCount++; document.getElementById('log-count').textContent=logCount;
-  const el=document.createElement('div'); el.className='log-item '+type;
-  const b=type!=='info'?`<span class="log-badge ${type}">${type.toUpperCase()}</span>`:'';
-  el.innerHTML=`${b}<div class="log-id">${id}</div><div class="log-meta">${meta}</div><div class="log-time">${time}</div>`;
-  const list=document.getElementById('log-list');
-  list.insertBefore(el,list.firstChild);
-}
-
-// Toast
 let tt;
-function showToast(msg,err=false) {
+function showToast(msg) {
   const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast show'+(err?' err':'');
-  clearTimeout(tt); tt=setTimeout(()=>t.className='toast',3500);
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),2800);
 }
 </script>
 </body>
