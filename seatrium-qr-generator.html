@@ -453,7 +453,10 @@ function renderCard(m) {
   `;
   document.getElementById('qr-grid').appendChild(card);
   setTimeout(() => {
-    new QRCode(document.getElementById('qr-'+m.id), {
+    const qrEl = document.getElementById('qr-'+m.id);
+    if (!qrEl) return;
+    qrEl.innerHTML = ''; // clear before rendering
+    new QRCode(qrEl, {
       text: getScanUrl(m.id),
       width: 180, height: 180,
       colorDark: '#000000',
