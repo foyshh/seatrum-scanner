@@ -2,189 +2,147 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Seatrum Scanner</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 
 .header {
-  background:#1a6b3a; padding:14px 24px;
+  background:#1a6b3a; padding:14px 20px;
   display:flex; align-items:center; justify-content:space-between;
 }
-.header-logo { font-family:'Space Mono',monospace; font-size:16px; font-weight:700; color:#fff; letter-spacing:0.1em; }
-.header-logo span { opacity:0.5; }
-.header-time { font-family:'Space Mono',monospace; font-size:11px; color:rgba(255,255,255,0.6); }
+.logo { font-family:'Space Mono',monospace; font-size:15px; font-weight:700; color:#fff; letter-spacing:0.1em; }
+.logo span { opacity:0.5; }
+.clock { font-family:'Space Mono',monospace; font-size:11px; color:rgba(255,255,255,0.6); }
 
+/* SETUP */
 .setup-bar {
   background:#fff8e1; border-bottom:2px solid #ffc107;
-  padding:12px 24px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
 }
 .setup-bar.hidden { display:none; }
-.setup-bar input {
-  flex:1; min-width:200px; padding:8px 12px;
-  border:1.5px solid #ddd; border-radius:6px;
-  font-family:'Space Mono',monospace; font-size:12px; outline:none;
+.setup-group { display:flex; flex-direction:column; gap:4px; flex:1; min-width:200px; }
+.setup-label { font-family:'Space Mono',monospace; font-size:10px; color:#7a5c00; text-transform:uppercase; }
+.setup-input {
+  padding:9px 12px; border:1.5px solid #ddd; border-radius:6px;
+  font-family:'Space Mono',monospace; font-size:11px; outline:none; width:100%;
 }
-.setup-bar input:focus { border-color:#1a6b3a; }
-.setup-label { font-family:'Space Mono',monospace; font-size:10px; color:#7a5c00; text-transform:uppercase; white-space:nowrap; }
+.setup-input:focus { border-color:#1a6b3a; }
 .btn-connect {
-  padding:9px 20px; background:#1a6b3a; color:#fff;
-  border:none; border-radius:6px; font-family:'Space Mono',monospace;
-  font-size:11px; font-weight:700; cursor:pointer;
+  padding:10px 20px; background:#1a6b3a; color:#fff; border:none;
+  border-radius:6px; font-family:'Space Mono',monospace; font-size:11px;
+  font-weight:700; cursor:pointer; white-space:nowrap;
 }
-.setup-group { display:flex; flex-direction:column; gap:4px; flex:1; min-width:180px; }
 
-.main { display:flex; align-items:flex-start; justify-content:center; padding:28px 16px; gap:20px; flex-wrap:wrap; }
+.main { padding:16px; max-width:480px; margin:0 auto; }
 
-.scan-card {
+.card {
   background:#fff; border-radius:14px;
-  box-shadow:0 2px 16px rgba(0,0,0,0.08);
-  width:360px; overflow:hidden;
+  box-shadow:0 2px 16px rgba(0,0,0,0.08); overflow:hidden; margin-bottom:16px;
 }
-.scan-card-header {
-  background:#1a6b3a; padding:14px 20px;
-  font-family:'Space Mono',monospace; font-size:12px;
+.card-header {
+  background:#1a6b3a; padding:13px 18px;
+  font-family:'Space Mono',monospace; font-size:11px;
   color:#fff; letter-spacing:0.08em; text-transform:uppercase;
 }
-.scan-card-body { padding:20px; }
+.card-body { padding:18px; }
 
-/* MODE TABS */
-.mode-tabs { display:flex; gap:8px; margin-bottom:16px; }
-.mode-tab {
-  flex:1; padding:10px; border-radius:8px; border:2px solid #e0e0e0;
-  font-family:'Space Mono',monospace; font-size:11px; font-weight:700;
-  cursor:pointer; background:#fafafa; color:#888; text-align:center; transition:all 0.2s;
+/* SCANNED BADGE — big and prominent */
+.asset-banner {
+  background:linear-gradient(135deg,#1a6b3a,#2d9b5a);
+  border-radius:12px; padding:18px;
+  text-align:center; margin-bottom:18px;
+  animation:pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
-.mode-tab.active { background:#1a6b3a; border-color:#1a6b3a; color:#fff; }
-.mode-tab:hover:not(.active) { border-color:#1a6b3a; color:#1a6b3a; }
+@keyframes pop { from{transform:scale(0.9);opacity:0} to{transform:scale(1);opacity:1} }
+.asset-banner-label { font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px; }
+.asset-banner-id { font-family:'Space Mono',monospace; font-size:26px; font-weight:700; color:#fff; display:block; }
+.asset-banner-sub { font-size:12px; color:rgba(255,255,255,0.7); margin-top:4px; }
 
-/* HANDHELD */
-.handheld-section { display:block; }
-.scan-input {
-  width:100%; padding:16px 20px; border:2px solid #e0e0e0; border-radius:10px;
-  font-family:'Space Mono',monospace; font-size:18px; font-weight:700;
-  color:#1a6b3a; outline:none; transition:all 0.2s; text-align:center;
-  background:#f9fff9; margin-bottom:8px;
-}
-.scan-input:focus { border-color:#1a6b3a; background:#fff; box-shadow:0 0 0 4px rgba(26,107,58,0.08); }
-.scan-input::placeholder { color:#ccc; font-size:13px; font-weight:400; }
-.scan-input.flash { animation:flash 0.4s ease; }
-@keyframes flash { 0%,100%{background:#fff} 50%{background:#d4f5e0} }
-.scan-hint { font-size:11px; color:#aaa; text-align:center; margin-bottom:16px; font-family:'Space Mono',monospace; }
+/* WAITING STATE */
+.waiting-state { text-align:center; padding:24px 16px; }
+.waiting-icon { font-size:48px; margin-bottom:12px; display:block; }
+.waiting-text { font-family:'Space Mono',monospace; font-size:12px; color:#888; line-height:1.7; }
+.waiting-text strong { color:#1a6b3a; }
 
-/* CAMERA */
-.camera-section { display:none; }
-.camera-viewport {
-  width:100%; border-radius:10px; overflow:hidden;
-  background:#111; position:relative; margin-bottom:8px; aspect-ratio:1;
+/* MANUAL INPUT */
+.manual-row { display:flex; gap:8px; margin-top:14px; }
+.manual-input {
+  flex:1; padding:11px 13px; border:1.5px solid #e0e0e0; border-radius:8px;
+  font-family:'Space Mono',monospace; font-size:13px; font-weight:700;
+  color:#1a6b3a; outline:none; background:#f9fff9;
 }
-video { width:100%; height:100%; object-fit:cover; display:block; }
-.camera-overlay {
-  position:absolute; inset:0; display:flex;
-  align-items:center; justify-content:center; pointer-events:none;
+.manual-input:focus { border-color:#1a6b3a; background:#fff; }
+.manual-input::placeholder { color:#ccc; font-weight:400; font-size:12px; }
+.btn-manual {
+  padding:11px 16px; background:#1a6b3a; color:#fff; border:none;
+  border-radius:8px; font-family:'Space Mono',monospace; font-size:11px;
+  font-weight:700; cursor:pointer; white-space:nowrap;
 }
-.scan-frame {
-  width:55%; height:55%; border-radius:10px;
-  border:3px solid rgba(26,107,58,0.9);
-  box-shadow:0 0 0 9999px rgba(0,0,0,0.45); position:relative;
-}
-.scan-line {
-  position:absolute; left:5%; right:5%; height:2px;
-  background:linear-gradient(90deg,transparent,#1a6b3a,transparent);
-  animation:scan-move 2s ease-in-out infinite; top:10%;
-}
-@keyframes scan-move { 0%{top:10%} 100%{top:85%} }
-.camera-hint { font-size:11px; color:#aaa; text-align:center; margin-bottom:12px; font-family:'Space Mono',monospace; }
-.btn-camera {
-  width:100%; padding:12px; margin-bottom:12px;
-  background:#1a6b3a; color:#fff; border:none; border-radius:9px;
-  font-family:'Space Mono',monospace; font-size:12px; font-weight:700; cursor:pointer; transition:all 0.2s;
-}
-.btn-camera.active { background:#dc2626; }
 
-/* SCANNED BADGE */
-.scanned-badge {
-  background:#f0fdf4; border:2px solid #bbf7d0; border-radius:8px;
-  padding:10px 14px; margin-bottom:14px;
-  display:none; align-items:center; justify-content:space-between;
+.field-label {
+  font-family:'Space Mono',monospace; font-size:10px;
+  text-transform:uppercase; letter-spacing:0.1em; color:#888;
+  margin-bottom:5px; display:block;
 }
-.scanned-badge.show { display:flex; }
-.scanned-id { font-family:'Space Mono',monospace; font-size:15px; font-weight:700; color:#1a6b3a; }
-.btn-clear { background:none; border:none; cursor:pointer; color:#999; font-size:16px; }
-
-.field-label { font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:5px; display:block; }
-.inspector-select {
-  width:100%; padding:10px 14px; border:1.5px solid #e0e0e0; border-radius:8px;
-  font-size:14px; color:#1a1814; background:#fafafa; outline:none; cursor:pointer; margin-bottom:14px;
+.select {
+  width:100%; padding:10px 13px; border:1.5px solid #e0e0e0; border-radius:8px;
+  font-size:14px; color:#1a1814; background:#fafafa; outline:none;
+  cursor:pointer; margin-bottom:14px;
 }
-.inspector-select:focus { border-color:#1a6b3a; }
+.select:focus { border-color:#1a6b3a; }
 
 .status-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
-.status-btn {
-  padding:10px 6px; border-radius:8px; border:2px solid #e0e0e0;
+.s-btn {
+  padding:11px 6px; border-radius:8px; border:2px solid #e0e0e0;
   font-family:'Space Mono',monospace; font-size:11px; font-weight:700;
-  cursor:pointer; background:#fafafa; transition:all 0.15s; text-align:center;
+  cursor:pointer; background:#fafafa; text-align:center; transition:all 0.15s;
 }
-.status-btn.active-pass { background:#d4f5e0; border-color:#1a6b3a; color:#1a6b3a; }
-.status-btn.active-flag { background:#fff3cd; border-color:#f59e0b; color:#92400e; }
-.status-btn.active-fail { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+.s-btn.pass { background:#d4f5e0; border-color:#1a6b3a; color:#1a6b3a; }
+.s-btn.flag { background:#fff3cd; border-color:#f59e0b; color:#92400e; }
+.s-btn.fail { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
 
-.checklist { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
-.cl-item {
-  display:flex; align-items:center; gap:10px; padding:8px 12px;
-  background:#f9f9f9; border:1.5px solid #ececec; border-radius:7px;
-  cursor:pointer; transition:all 0.15s;
+.checklist { display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
+.cl {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  background:#f9f9f9; border:1.5px solid #ececec; border-radius:8px; cursor:pointer;
 }
-.cl-item:hover { border-color:#1a6b3a; }
-.cl-item.checked { background:#f0fdf4; border-color:#bbf7d0; }
-.cl-cb {
-  width:18px; height:18px; border-radius:4px; border:2px solid #ccc;
+.cl.checked { background:#f0fdf4; border-color:#bbf7d0; }
+.cl-box {
+  width:20px; height:20px; border-radius:5px; border:2px solid #ccc;
   display:flex; align-items:center; justify-content:center;
-  flex-shrink:0; font-size:11px; transition:all 0.15s;
+  flex-shrink:0; font-size:12px; transition:all 0.15s;
 }
-.cl-item.checked .cl-cb { background:#1a6b3a; border-color:#1a6b3a; color:#fff; }
+.cl.checked .cl-box { background:#1a6b3a; border-color:#1a6b3a; color:#fff; }
 .cl-text { font-size:13px; color:#333; }
-.cl-item.checked .cl-text { color:#888; text-decoration:line-through; }
+.cl.checked .cl-text { color:#aaa; text-decoration:line-through; }
 
 .btn-submit {
-  width:100%; padding:14px; background:#1a6b3a; color:#fff;
-  border:none; border-radius:10px; font-family:'Space Mono',monospace;
-  font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s;
+  width:100%; padding:15px; background:#1a6b3a; color:#fff; border:none;
+  border-radius:11px; font-family:'Space Mono',monospace; font-size:13px;
+  font-weight:700; cursor:pointer; transition:all 0.2s;
 }
-.btn-submit:hover { background:#155c2f; transform:translateY(-1px); }
-.btn-submit:disabled { background:#ccc; cursor:not-allowed; transform:none; }
+.btn-submit:active { transform:scale(0.98); }
+.btn-submit:disabled { background:#ccc; }
 .btn-submit.syncing { background:#2563eb; }
 
-.conn-status {
-  display:flex; align-items:center; gap:6px;
-  font-family:'Space Mono',monospace; font-size:10px;
-  padding:8px 12px; background:#f0fdf4; border-top:1px solid #dcfce7;
+.conn {
+  display:flex; align-items:center; gap:7px; padding:9px 18px;
+  background:#f0fdf4; border-top:1px solid #dcfce7;
+  font-family:'Space Mono',monospace; font-size:10px; color:#666;
 }
-.conn-dot { width:7px; height:7px; border-radius:50%; background:#ccc; }
-.conn-dot.on { background:#22c55e; animation:pg 2s infinite; }
-@keyframes pg { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.4)} 50%{box-shadow:0 0 0 5px rgba(34,197,94,0)} }
+.dot { width:8px; height:8px; border-radius:50%; background:#ccc; flex-shrink:0; }
+.dot.on { background:#22c55e; animation:pg 2s infinite; }
+@keyframes pg { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,0.5)} 50%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
 
-/* LOG */
-.log-card {
-  background:#fff; border-radius:14px;
-  box-shadow:0 2px 16px rgba(0,0,0,0.08);
-  width:360px; max-height:620px; display:flex; flex-direction:column; overflow:hidden;
-}
-.log-header {
-  background:#f8f8f8; border-bottom:1px solid #eee;
-  padding:14px 20px; display:flex; align-items:center; justify-content:space-between;
-}
-.log-title { font-family:'Space Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:#888; }
-.log-count { font-family:'Space Mono',monospace; font-size:11px; background:#1a6b3a; color:#fff; padding:2px 10px; border-radius:10px; }
-.log-list { flex:1; overflow-y:auto; padding:10px 16px; }
+.log-list { max-height:260px; overflow-y:auto; }
 .log-item {
   padding:10px 12px; border-radius:8px; margin-bottom:8px;
   border-left:3px solid #ccc; background:#fafafa; animation:li 0.3s ease;
 }
-@keyframes li { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+@keyframes li { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:none} }
 .log-item.pass { border-color:#1a6b3a; background:#f0fdf4; }
 .log-item.flag { border-color:#f59e0b; background:#fffbeb; }
 .log-item.fail { border-color:#ef4444; background:#fef2f2; }
@@ -196,137 +154,167 @@ video { width:100%; height:100%; object-fit:cover; display:block; }
 .log-badge.pass { background:#dcfce7; color:#166534; }
 .log-badge.flag { background:#fef3c7; color:#92400e; }
 .log-badge.fail { background:#fee2e2; color:#991b1b; }
+.log-count { font-family:'Space Mono',monospace; font-size:11px; background:#1a6b3a; color:#fff; padding:2px 10px; border-radius:10px; }
 
 .toast {
-  position:fixed; bottom:24px; left:50%;
-  transform:translateX(-50%) translateY(60px);
-  background:#1a6b3a; color:#fff; padding:11px 22px; border-radius:30px;
+  position:fixed; bottom:28px; left:50%;
+  transform:translateX(-50%) translateY(70px);
+  background:#1a6b3a; color:#fff; padding:13px 24px; border-radius:30px;
   font-family:'Space Mono',monospace; font-size:12px; opacity:0;
   transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-  box-shadow:0 4px 20px rgba(0,0,0,0.2); z-index:999; white-space:nowrap;
+  box-shadow:0 4px 24px rgba(0,0,0,0.25); z-index:999;
+  max-width:90vw; text-align:center;
 }
 .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
-.toast.error { background:#dc2626; }
+.toast.err { background:#dc2626; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <span class="header-logo">SEAT<span>RUM</span> &nbsp;·&nbsp; <span style="opacity:0.7;font-size:12px;">Scanner</span></span>
-  <span class="header-time" id="clock"></span>
+  <span class="logo">SEAT<span>RUM</span> · Scanner</span>
+  <span class="clock" id="clock"></span>
 </div>
 
 <div class="setup-bar" id="setup-bar">
-  <span style="font-size:20px;">🔑</span>
+  <span style="font-size:20px">🔑</span>
   <div class="setup-group">
     <span class="setup-label">Apps Script Web App URL</span>
-    <input type="text" id="script-url" placeholder="https://script.google.com/macros/s/.../exec" />
+    <input class="setup-input" id="script-url" type="text" placeholder="https://script.google.com/macros/s/.../exec" />
   </div>
   <button class="btn-connect" onclick="connect()">▶ CONNECT</button>
-  <button onclick="document.getElementById('setup-bar').classList.add('hidden')" style="background:none;border:none;cursor:pointer;font-size:18px;color:#aaa;">✕</button>
+  <button onclick="document.getElementById('setup-bar').classList.add('hidden')" style="background:none;border:none;font-size:20px;color:#aaa;cursor:pointer">✕</button>
 </div>
 
 <div class="main">
-  <div class="scan-card">
-    <div class="scan-card-header">📷 Scan Machine QR Code</div>
-    <div class="scan-card-body">
 
-      <div class="mode-tabs">
-        <div class="mode-tab active" id="tab-handheld" onclick="setMode('handheld')">🔫 Handheld Scanner</div>
-        <div class="mode-tab" id="tab-camera" onclick="setMode('camera')">📱 Phone Camera</div>
-      </div>
+  <!-- SCANNER CARD -->
+  <div class="card">
+    <div class="card-header">📋 Inspection Form</div>
+    <div class="card-body">
 
-      <!-- HANDHELD -->
-      <div id="handheld-section">
-        <input type="text" class="scan-input" id="scan-input" placeholder="Waiting for scan..." autofocus autocomplete="off" />
-        <div class="scan-hint">Point handheld scanner at QR — auto-fills instantly</div>
-      </div>
-
-      <!-- CAMERA -->
-      <div id="camera-section" style="display:none;">
-        <div class="camera-viewport">
-          <video id="cam-video" playsinline muted></video>
-          <div class="camera-overlay">
-            <div class="scan-frame"><div class="scan-line"></div></div>
-          </div>
+      <!-- ASSET ID SECTION -->
+      <div id="waiting-state" class="waiting-state">
+        <span class="waiting-icon">📷</span>
+        <div class="waiting-text">
+          <strong>Scan a QR code</strong> with your phone's<br>
+          default camera app to open this page<br>
+          with the machine pre-loaded.<br><br>
+          Or type an Asset ID manually below:
         </div>
-        <div class="camera-hint">Align QR code within the green box</div>
-        <button class="btn-camera" id="btn-cam" onclick="toggleCamera()">▶ Start Camera</button>
+        <div class="manual-row">
+          <input type="text" class="manual-input" id="manual-input" placeholder="e.g. EQP-0012" autocomplete="off" />
+          <button class="btn-manual" onclick="manualSet()">GO</button>
+        </div>
       </div>
 
-      <!-- SCANNED RESULT -->
-      <div class="scanned-badge" id="scanned-badge">
-        <span class="scanned-id" id="scanned-id-text">—</span>
-        <button class="btn-clear" onclick="clearScan()">✕</button>
+      <!-- ASSET BANNER (shown after scan) -->
+      <div id="asset-banner" class="asset-banner" style="display:none">
+        <div class="asset-banner-label">Machine Scanned</div>
+        <span class="asset-banner-id" id="banner-id">—</span>
+        <div class="asset-banner-sub">Tap ✕ to scan a different machine</div>
+        <button onclick="clearAsset()" style="margin-top:10px;background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 14px;border-radius:20px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer">✕ Clear</button>
       </div>
 
+      <!-- INSPECTOR -->
       <span class="field-label">Inspector</span>
-      <select class="inspector-select" id="inspector">
-        <option>Ahmad Rashid</option>
-        <option>Tan Wei Liang</option>
-        <option>Priya Suresh</option>
-        <option>Lee Min Hui</option>
-        <option>Ravi Kumar</option>
-        <option>Chen Xiao Hua</option>
+      <select class="select" id="inspector">
+        <option>Romjan</option>
+        <option>Foyshal</option>
       </select>
 
+      <!-- STATUS -->
       <span class="field-label">Status</span>
       <div class="status-row">
-        <div class="status-btn active-pass" id="btn-pass" onclick="setStatus('PASS')">✓ PASS</div>
-        <div class="status-btn" id="btn-flag" onclick="setStatus('FLAG')">⚠ FLAG</div>
-        <div class="status-btn" id="btn-fail" onclick="setStatus('FAIL')">✗ FAIL</div>
+        <div class="s-btn pass" id="s-pass" onclick="setStatus('PASS')">✓ PASS</div>
+        <div class="s-btn" id="s-flag" onclick="setStatus('FLAG')">⚠ FLAG</div>
+        <div class="s-btn" id="s-fail" onclick="setStatus('FAIL')">✗ FAIL</div>
       </div>
 
+      <!-- CHECKLIST -->
       <span class="field-label">Checklist</span>
-      <div class="checklist" id="checklist">
-        <div class="cl-item checked" onclick="toggle(this)"><div class="cl-cb">✓</div><span class="cl-text">Visual damage check</span></div>
-        <div class="cl-item checked" onclick="toggle(this)"><div class="cl-cb">✓</div><span class="cl-text">Safety mechanisms functional</span></div>
-        <div class="cl-item checked" onclick="toggle(this)"><div class="cl-cb">✓</div><span class="cl-text">Fluid / pressure levels ok</span></div>
-        <div class="cl-item checked" onclick="toggle(this)"><div class="cl-cb">✓</div><span class="cl-text">Emergency stop tested</span></div>
-        <div class="cl-item checked" onclick="toggle(this)"><div class="cl-cb">✓</div><span class="cl-text">Labels & tags legible</span></div>
+      <div class="checklist">
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Visual damage check</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Safety mechanisms functional</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Fluid / pressure levels ok</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Emergency stop tested</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Labels & tags legible</span></div>
       </div>
 
-      <button class="btn-submit" id="submit-btn" onclick="submitScan()">↑ SUBMIT TO GOOGLE SHEETS</button>
+      <button class="btn-submit" id="btn-submit" onclick="submitScan()">↑ SUBMIT TO GOOGLE SHEETS</button>
     </div>
-    <div class="conn-status">
-      <div class="conn-dot" id="conn-dot"></div>
+    <div class="conn">
+      <div class="dot" id="dot"></div>
       <span id="conn-text">Not connected — enter URL above</span>
     </div>
   </div>
 
   <!-- LOG -->
-  <div class="log-card">
-    <div class="log-header">
-      <span class="log-title">📋 Submission Log</span>
-      <span class="log-count" id="log-count">0</span>
-    </div>
-    <div class="log-list" id="log-list">
-      <div class="log-item info">
-        <div class="log-id">System Ready</div>
-        <div class="log-meta">Choose a scan mode above to begin</div>
-        <div class="log-time" id="start-time"></div>
+  <div class="card">
+    <div class="card-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <span style="font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#888;">📋 Submission Log</span>
+        <span class="log-count" id="log-count">0</span>
+      </div>
+      <div class="log-list" id="log-list">
+        <div class="log-item info">
+          <div class="log-id">Ready</div>
+          <div class="log-meta">Scan a QR code with your camera to begin</div>
+        </div>
       </div>
     </div>
   </div>
+
 </div>
 
 <div class="toast" id="toast"></div>
-<canvas id="qr-canvas" style="display:none;"></canvas>
 
 <script>
-let scriptUrl = '', currentStatus = 'PASS', currentAssetId = '';
-let scanBuffer = '', scanTimer = null, logCount = 0;
-let cameraStream = null, cameraActive = false, scanCooldown = false;
-let currentMode = 'handheld';
+let scriptUrl = '', currentStatus = 'PASS', currentAssetId = '', logCount = 0;
 
 // Clock
-function updateClock() {
+function tick() {
   document.getElementById('clock').textContent =
-    new Date().toLocaleTimeString('en-SG',{timeZone:'Asia/Singapore',hour12:false}) + ' SGT';
+    new Date().toLocaleTimeString('en-SG',{timeZone:'Asia/Singapore',hour12:false})+' SGT';
 }
-updateClock(); setInterval(updateClock, 1000);
-document.getElementById('start-time').textContent =
-  new Date().toLocaleTimeString('en-SG',{timeZone:'Asia/Singapore',hour12:false});
+tick(); setInterval(tick, 1000);
+
+// ── AUTO-READ ASSET ID FROM URL ──────────────────────────────
+// When camera scans QR → opens https://foyshh.github.io/seatrum-scanner/?id=EQP-0012
+// This reads the ?id= parameter automatically
+window.addEventListener('load', function() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get('id');
+  if (id) {
+    setAsset(id.trim().toUpperCase());
+    showToast('📷 Loaded: ' + id.toUpperCase());
+  }
+});
+
+function setAsset(id) {
+  currentAssetId = id;
+  document.getElementById('banner-id').textContent = id;
+  document.getElementById('asset-banner').style.display = 'block';
+  document.getElementById('waiting-state').style.display = 'none';
+}
+
+function clearAsset() {
+  currentAssetId = '';
+  document.getElementById('asset-banner').style.display = 'none';
+  document.getElementById('waiting-state').style.display = 'block';
+  // Remove ?id= from URL without reloading
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
+function manualSet() {
+  const val = document.getElementById('manual-input').value.trim().toUpperCase();
+  if (!val) { showToast('⚠ Enter an Asset ID', true); return; }
+  setAsset(val);
+  document.getElementById('manual-input').value = '';
+}
+document.getElementById('manual-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') manualSet();
+});
 
 // Connect
 function connect() {
@@ -334,151 +322,64 @@ function connect() {
   if (!url.startsWith('https://script.google.com')) { showToast('⚠ Invalid URL', true); return; }
   scriptUrl = url;
   localStorage.setItem('seatrum_url', url);
-  document.getElementById('conn-dot').className = 'conn-dot on';
+  document.getElementById('dot').className = 'dot on';
   document.getElementById('conn-text').textContent = 'Connected to Google Sheets ✓';
   document.getElementById('setup-bar').classList.add('hidden');
-  showToast('✓ Connected! Ready to scan.');
+  showToast('✓ Connected!');
 }
 const saved = localStorage.getItem('seatrum_url');
-if (saved) { scriptUrl = saved; document.getElementById('script-url').value = saved; connect(); }
-
-// Mode switch
-function setMode(mode) {
-  currentMode = mode;
-  document.getElementById('tab-handheld').className = 'mode-tab' + (mode==='handheld'?' active':'');
-  document.getElementById('tab-camera').className   = 'mode-tab' + (mode==='camera'?' active':'');
-  document.getElementById('handheld-section').style.display = mode==='handheld'?'block':'none';
-  document.getElementById('camera-section').style.display   = mode==='camera'?'block':'none';
-  if (mode==='handheld') { stopCamera(); document.getElementById('scan-input').focus(); }
-}
-
-// Handheld — capture rapid keystrokes
-document.addEventListener('keydown', function(e) {
-  if (currentMode !== 'handheld') return;
-  if (['script-url'].includes(document.activeElement?.id)) return;
-  if (document.activeElement?.tagName === 'SELECT') return;
-  if (e.key === 'Enter') {
-    const val = scanBuffer.trim() || document.getElementById('scan-input').value.trim();
-    if (val.length > 1) setScannedId(val.toUpperCase());
-    scanBuffer = '';
-    return;
-  }
-  if (e.key.length === 1) {
-    scanBuffer += e.key;
-    clearTimeout(scanTimer);
-    scanTimer = setTimeout(() => { scanBuffer = ''; }, 100);
-  }
-});
-document.getElementById('scan-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && this.value.trim()) setScannedId(this.value.trim().toUpperCase());
-});
-
-// Camera
-async function toggleCamera() {
-  if (cameraActive) { stopCamera(); return; }
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:'environment', width:{ideal:640}, height:{ideal:640} }
-    });
-    const v = document.getElementById('cam-video');
-    v.srcObject = cameraStream; await v.play();
-    cameraActive = true;
-    document.getElementById('btn-cam').textContent = '⏹ Stop Camera';
-    document.getElementById('btn-cam').classList.add('active');
-    requestAnimationFrame(scanFrame);
-  } catch(e) {
-    showToast('⚠ Camera access denied. Allow in browser settings.', true);
-  }
-}
-function stopCamera() {
-  if (cameraStream) { cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; }
-  cameraActive = false;
-  document.getElementById('btn-cam').textContent = '▶ Start Camera';
-  document.getElementById('btn-cam').classList.remove('active');
-}
-function scanFrame() {
-  if (!cameraActive) return;
-  const v = document.getElementById('cam-video');
-  if (v.readyState !== v.HAVE_ENOUGH_DATA) { requestAnimationFrame(scanFrame); return; }
-  const c = document.getElementById('qr-canvas');
-  c.width = v.videoWidth; c.height = v.videoHeight;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(v, 0, 0);
-  const img = ctx.getImageData(0, 0, c.width, c.height);
-  const code = jsQR(img.data, img.width, img.height, {inversionAttempts:'dontInvert'});
-  if (code && !scanCooldown) {
-    setScannedId(code.data.trim().toUpperCase());
-    scanCooldown = true;
-    setTimeout(()=>{ scanCooldown=false; }, 3000);
-  }
-  requestAnimationFrame(scanFrame);
-}
-
-// Set scanned ID
-function setScannedId(id) {
-  currentAssetId = id;
-  document.getElementById('scan-input').value = id;
-  document.getElementById('scan-input').classList.add('flash');
-  setTimeout(()=>document.getElementById('scan-input').classList.remove('flash'), 400);
-  document.getElementById('scanned-id-text').textContent = '✓ Scanned: ' + id;
-  document.getElementById('scanned-badge').classList.add('show');
-  showToast('📷 Scanned: ' + id);
-}
-function clearScan() {
-  currentAssetId = '';
-  document.getElementById('scan-input').value = '';
-  document.getElementById('scanned-badge').classList.remove('show');
-}
+if (saved) { scriptUrl=saved; document.getElementById('script-url').value=saved; connect(); }
 
 // Status & checklist
 function setStatus(s) {
   currentStatus = s;
-  document.getElementById('btn-pass').className = 'status-btn'+(s==='PASS'?' active-pass':'');
-  document.getElementById('btn-flag').className = 'status-btn'+(s==='FLAG'?' active-flag':'');
-  document.getElementById('btn-fail').className = 'status-btn'+(s==='FAIL'?' active-fail':'');
+  document.getElementById('s-pass').className = 's-btn'+(s==='PASS'?' pass':'');
+  document.getElementById('s-flag').className = 's-btn'+(s==='FLAG'?' flag':'');
+  document.getElementById('s-fail').className = 's-btn'+(s==='FAIL'?' fail':'');
 }
-function toggle(el) {
+function tog(el) {
   el.classList.toggle('checked');
-  el.querySelector('.cl-cb').textContent = el.classList.contains('checked')?'✓':'';
+  el.querySelector('.cl-box').textContent = el.classList.contains('checked')?'✓':'';
 }
 
 // Submit
 async function submitScan() {
-  const assetId = (currentAssetId||document.getElementById('scan-input').value.trim()).toUpperCase();
-  if (!assetId) { showToast('⚠ No asset scanned yet!', true); return; }
+  if (!currentAssetId) { showToast('⚠ Scan a QR code first!', true); return; }
   const inspector = document.getElementById('inspector').value;
-  const items = document.querySelectorAll('#checklist .cl-item');
+  const items = document.querySelectorAll('.cl');
   const checked = [...items].filter(i=>i.classList.contains('checked')).length;
   const now = new Date();
-  const sgOpts = {timeZone:'Asia/Singapore',hour12:false};
-  const date = now.toLocaleDateString('en-SG',{...sgOpts,day:'2-digit',month:'short',year:'numeric'});
-  const time = now.toLocaleTimeString('en-SG',sgOpts);
-  const payload = { assetId, date, time, inspector, checklist:`${checked}/${items.length}`, status:currentStatus };
+  const sg = {timeZone:'Asia/Singapore',hour12:false};
+  const date = now.toLocaleDateString('en-SG',{...sg,day:'2-digit',month:'short',year:'numeric'});
+  const time = now.toLocaleTimeString('en-SG',sg);
 
-  const btn = document.getElementById('submit-btn');
+  const btn = document.getElementById('btn-submit');
   btn.disabled=true; btn.textContent='⏳ Sending...'; btn.classList.add('syncing');
 
   if (scriptUrl) {
     try {
-      await fetch(scriptUrl,{ method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-      showToast('✓ '+assetId+' saved to Google Sheets!');
-      addLog(currentStatus.toLowerCase(), assetId, inspector+' · '+checked+'/'+items.length+' checks', time);
+      await fetch(scriptUrl, {
+        method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({assetId:currentAssetId,date,time,inspector,checklist:`${checked}/${items.length}`,status:currentStatus})
+      });
+      showToast('✓ '+currentAssetId+' saved to Sheets!');
+      addLog(currentStatus.toLowerCase(), currentAssetId, inspector+' · '+checked+'/'+items.length+' checks', time);
     } catch(e) { showToast('❌ Sync failed', true); }
-  } else { showToast('⚠ Not connected!', true); }
+  } else { showToast('⚠ Not connected to Sheets!', true); }
 
   btn.disabled=false; btn.textContent='↑ SUBMIT TO GOOGLE SHEETS'; btn.classList.remove('syncing');
-  clearScan();
-  document.querySelectorAll('#checklist .cl-item').forEach(el=>{ el.classList.add('checked'); el.querySelector('.cl-cb').textContent='✓'; });
+  clearAsset();
+  document.querySelectorAll('.cl').forEach(el=>{ el.classList.add('checked'); el.querySelector('.cl-box').textContent='✓'; });
   setStatus('PASS');
-  if (currentMode==='handheld') document.getElementById('scan-input').focus();
 }
 
 // Log
 function addLog(type,id,meta,time) {
   logCount++; document.getElementById('log-count').textContent=logCount;
   const el=document.createElement('div'); el.className='log-item '+type;
-  const badge=type!=='info'?`<span class="log-badge ${type}">${type.toUpperCase()}</span>`:'';
-  el.innerHTML=`${badge}<div class="log-id">${id}</div><div class="log-meta">${meta}</div><div class="log-time">${time}</div>`;
+  const b=type!=='info'?`<span class="log-badge ${type}">${type.toUpperCase()}</span>`:'';
+  el.innerHTML=`${b}<div class="log-id">${id}</div><div class="log-meta">${meta}</div><div class="log-time">${time}</div>`;
   const list=document.getElementById('log-list');
   list.insertBefore(el,list.firstChild);
 }
@@ -487,8 +388,8 @@ function addLog(type,id,meta,time) {
 let tt;
 function showToast(msg,err=false) {
   const t=document.getElementById('toast');
-  t.textContent=msg; t.className='toast show'+(err?' error':'');
-  clearTimeout(tt); tt=setTimeout(()=>t.className='toast',3000);
+  t.textContent=msg; t.className='toast show'+(err?' err':'');
+  clearTimeout(tt); tt=setTimeout(()=>t.className='toast',3500);
 }
 </script>
 </body>
