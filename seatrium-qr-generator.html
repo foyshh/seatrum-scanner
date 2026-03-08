@@ -123,7 +123,7 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .cat-tools { background:rgba(100,180,255,0.3); color:#ddf0ff; }
 .cat-other { background:rgba(100,255,100,0.2); color:#d0ffd0; }
 .card-body { padding:14px; text-align:center; }
-.qr-wrap { display:inline-flex; align-items:center; justify-content:center; border:1px solid #f0f0f0; border-radius:8px; padding:6px; background:#fff; margin-bottom:8px; max-width:100%; overflow:hidden; }
+.qr-wrap { display:flex; align-items:center; justify-content:center; width:130px; height:130px; margin:0 auto 10px auto; background:#fff; border:1px solid #f0f0f0; border-radius:6px; overflow:hidden; flex-shrink:0; } .qr-wrap img, .qr-wrap canvas { width:120px !important; height:120px !important; display:block !important; }
 .card-id { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:#1a6b3a; display:block; margin-bottom:2px; }
 .card-name { font-size:12px; font-weight:600; color:#333; display:block; margin-bottom:2px; line-height:1.3; }
 .card-loc { font-size:10px; color:#999; font-family:'Space Mono',monospace; display:block; }
@@ -455,7 +455,7 @@ function renderCard(m) {
   setTimeout(() => {
     new QRCode(document.getElementById('qr-'+m.id), {
       text: getScanUrl(m.id),
-      width: 110, height: 110,
+      width: 120, height: 120,
       colorDark: '#000000',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M,
@@ -466,7 +466,7 @@ function renderCard(m) {
 function regenAll() {
   machines.forEach(m => {
     const wrap = document.getElementById('qr-'+m.id);
-    if (wrap) { wrap.innerHTML=''; new QRCode(wrap,{text:getScanUrl(m.id),width:110,height:110,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M}); }
+    if (wrap) { wrap.innerHTML=''; new QRCode(wrap,{text:getScanUrl(m.id),width:120,height:120,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M}); }
   });
   showToast('✓ All QR codes updated!');
 }
