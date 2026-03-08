@@ -17,7 +17,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .logo span { opacity:0.5; }
 .clock { font-family:'Space Mono',monospace; font-size:11px; color:rgba(255,255,255,0.6); }
 
-/* SETUP */
 .setup-bar {
   background:#fff8e1; border-bottom:2px solid #ffc107;
   padding:12px 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;
@@ -49,7 +48,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 }
 .card-body { padding:18px; }
 
-/* SCANNED BADGE — big and prominent */
 .asset-banner {
   background:linear-gradient(135deg,#1a6b3a,#2d9b5a);
   border-radius:12px; padding:18px;
@@ -61,13 +59,11 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .asset-banner-id { font-family:'Space Mono',monospace; font-size:26px; font-weight:700; color:#fff; display:block; }
 .asset-banner-sub { font-size:12px; color:rgba(255,255,255,0.7); margin-top:4px; }
 
-/* WAITING STATE */
 .waiting-state { text-align:center; padding:24px 16px; }
 .waiting-icon { font-size:48px; margin-bottom:12px; display:block; }
 .waiting-text { font-family:'Space Mono',monospace; font-size:12px; color:#888; line-height:1.7; }
 .waiting-text strong { color:#1a6b3a; }
 
-/* MANUAL INPUT */
 .manual-row { display:flex; gap:8px; margin-top:14px; }
 .manual-input {
   flex:1; padding:11px 13px; border:1.5px solid #e0e0e0; border-radius:8px;
@@ -187,20 +183,16 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 </div>
 
 <div class="main">
-
-  <!-- SCANNER CARD -->
   <div class="card">
     <div class="card-header">📋 Inspection Form</div>
     <div class="card-body">
 
-      <!-- ASSET ID SECTION -->
       <div id="waiting-state" class="waiting-state">
         <span class="waiting-icon">📷</span>
         <div class="waiting-text">
-          <strong>Scan a QR code</strong> with your phone's<br>
-          default camera app to open this page<br>
-          with the machine pre-loaded.<br><br>
-          Or type an Asset ID manually below:
+          <strong>Scan a QR code</strong> with your phone camera<br>
+          to auto-load the machine.<br><br>
+          Or type an Asset ID manually:
         </div>
         <div class="manual-row">
           <input type="text" class="manual-input" id="manual-input" placeholder="e.g. EQP-0012" autocomplete="off" />
@@ -208,22 +200,23 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
         </div>
       </div>
 
-      <!-- ASSET BANNER (shown after scan) -->
       <div id="asset-banner" class="asset-banner" style="display:none">
-        <div class="asset-banner-label">Machine Scanned</div>
+        <div class="asset-banner-label">✅ Machine Loaded</div>
         <span class="asset-banner-id" id="banner-id">—</span>
-        <div class="asset-banner-sub">Tap ✕ to scan a different machine</div>
-        <button onclick="clearAsset()" style="margin-top:10px;background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 14px;border-radius:20px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer">✕ Clear</button>
+        <div class="asset-banner-sub">Fill in details below and submit</div>
+        <button onclick="clearAsset()" style="margin-top:10px;background:rgba(255,255,255,0.2);border:none;color:#fff;padding:5px 14px;border-radius:20px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer">✕ Scan different machine</button>
       </div>
 
-      <!-- INSPECTOR -->
       <span class="field-label">Inspector</span>
       <select class="select" id="inspector">
-        <option>Romjan</option>
-        <option>Foyshal</option>
+        <option>Ahmad Rashid</option>
+        <option>Tan Wei Liang</option>
+        <option>Priya Suresh</option>
+        <option>Lee Min Hui</option>
+        <option>Ravi Kumar</option>
+        <option>Chen Xiao Hua</option>
       </select>
 
-      <!-- STATUS -->
       <span class="field-label">Status</span>
       <div class="status-row">
         <div class="s-btn pass" id="s-pass" onclick="setStatus('PASS')">✓ PASS</div>
@@ -231,7 +224,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
         <div class="s-btn" id="s-fail" onclick="setStatus('FAIL')">✗ FAIL</div>
       </div>
 
-      <!-- CHECKLIST -->
       <span class="field-label">Checklist</span>
       <div class="checklist">
         <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Visual damage check</span></div>
@@ -249,7 +241,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
     </div>
   </div>
 
-  <!-- LOG -->
   <div class="card">
     <div class="card-body">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -264,7 +255,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
       </div>
     </div>
   </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
@@ -279,19 +269,31 @@ function tick() {
 }
 tick(); setInterval(tick, 1000);
 
-// ── AUTO-READ ASSET ID FROM URL ──────────────────────────────
-// When camera scans QR → opens https://foyshh.github.io/seatrum-scanner/?id=EQP-0012
-// This reads the ?id= parameter automatically
+// ── READ ASSET ID FROM URL — always extract clean ID ──
 window.addEventListener('load', function() {
   const params = new URLSearchParams(window.location.search);
-  const id = params.get('id');
+  let id = params.get('id');
   if (id) {
-    setAsset(id.trim().toUpperCase());
-    showToast('📷 Loaded: ' + id.toUpperCase());
+    // Clean up — remove any URL prefix if accidentally included
+    id = id.trim().toUpperCase();
+    // Remove anything before ?id= if nested
+    if (id.includes('%3FID%3D')) id = decodeURIComponent(id).split('?id=').pop();
+    if (id.includes('?ID=')) id = id.split('?ID=').pop();
+    if (id.includes('?id=')) id = id.split('?id=').pop();
+    setAsset(id);
+    showToast('📷 Loaded: ' + id);
   }
 });
 
 function setAsset(id) {
+  // Always ensure we store only the clean asset ID — never a URL
+  if (id.startsWith('http')) {
+    try {
+      const url = new URL(id);
+      id = url.searchParams.get('id') || id;
+    } catch(e) {}
+  }
+  id = id.trim().toUpperCase();
   currentAssetId = id;
   document.getElementById('banner-id').textContent = id;
   document.getElementById('asset-banner').style.display = 'block';
@@ -302,7 +304,6 @@ function clearAsset() {
   currentAssetId = '';
   document.getElementById('asset-banner').style.display = 'none';
   document.getElementById('waiting-state').style.display = 'block';
-  // Remove ?id= from URL without reloading
   window.history.replaceState({}, '', window.location.pathname);
 }
 
@@ -342,9 +343,20 @@ function tog(el) {
   el.querySelector('.cl-box').textContent = el.classList.contains('checked')?'✓':'';
 }
 
-// Submit
+// Submit — always sends clean assetId
 async function submitScan() {
   if (!currentAssetId) { showToast('⚠ Scan a QR code first!', true); return; }
+
+  // Final safety clean — make absolutely sure it's not a URL
+  let cleanId = currentAssetId;
+  if (cleanId.startsWith('http')) {
+    try {
+      const url = new URL(cleanId);
+      cleanId = url.searchParams.get('id') || cleanId;
+    } catch(e) {}
+  }
+  cleanId = cleanId.trim().toUpperCase();
+
   const inspector = document.getElementById('inspector').value;
   const items = document.querySelectorAll('.cl');
   const checked = [...items].filter(i=>i.classList.contains('checked')).length;
@@ -361,12 +373,19 @@ async function submitScan() {
       await fetch(scriptUrl, {
         method:'POST', mode:'no-cors',
         headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({assetId:currentAssetId,date,time,inspector,checklist:`${checked}/${items.length}`,status:currentStatus})
+        body: JSON.stringify({
+          assetId: cleanId,      // ← always clean ID, never a URL
+          machineName: '',
+          category: '',
+          date, time, inspector,
+          checklist:`${checked}/${items.length}`,
+          status: currentStatus
+        })
       });
-      showToast('✓ '+currentAssetId+' saved to Sheets!');
-      addLog(currentStatus.toLowerCase(), currentAssetId, inspector+' · '+checked+'/'+items.length+' checks', time);
+      showToast('✓ '+cleanId+' saved to Sheets!');
+      addLog(currentStatus.toLowerCase(), cleanId, inspector+' · '+checked+'/'+items.length+' checks', time);
     } catch(e) { showToast('❌ Sync failed', true); }
-  } else { showToast('⚠ Not connected to Sheets!', true); }
+  } else { showToast('⚠ Not connected!', true); }
 
   btn.disabled=false; btn.textContent='↑ SUBMIT TO GOOGLE SHEETS'; btn.classList.remove('syncing');
   clearAsset();
