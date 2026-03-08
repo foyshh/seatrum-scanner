@@ -1,2 +1,2 @@
-# seatrum-scanner
-Seatrum Scanner for Machines
+# seatrium-scanner
+Seatrium Scanner for Machines
