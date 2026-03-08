@@ -387,6 +387,17 @@ document.addEventListener('keydown', function(e) {
 document.getElementById('scan-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && this.value.trim()) setHandheldId(this.value.trim());
 });
+// Handle paste
+document.getElementById('scan-input').addEventListener('paste', function() {
+  setTimeout(() => { if (this.value.trim().length > 1) setHandheldId(this.value.trim()); }, 50);
+});
+// Handle full URL typed by scanner
+document.getElementById('scan-input').addEventListener('input', function() {
+  const val = this.value.trim();
+  if (val.startsWith('http') && val.includes('?id=')) {
+    setTimeout(() => setHandheldId(val), 100);
+  }
+});
 
 function setHandheldId(raw) {
   const id = cleanId(raw);
