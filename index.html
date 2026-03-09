@@ -435,10 +435,30 @@ async function submitScan() {
   if (scriptUrl) {
     try {
       const machineData = getMachineData(id);
-      await fetch(scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({assetId:id,machineName:machineData?machineData.name:'',category:machineData?machineData.cat:'',date,time,inspector,checklist:getChecklistDetail(),checklistScore:`${checked}/${items.length}`,status:currentStatus,dueDate:getDueDateForId(id)})});
+      const payload = {
+        assetId:id,
+        machineName:machineData?machineData.name:'',
+        category:machineData?machineData.cat:'',
+        date, time, inspector,
+        checklist:getChecklistDetail(),
+        checklistScore:`${checked}/${items.length}`,
+        status:currentStatus,
+        dueDate:getDueDateForId(id)
+      };
+      console.log('Sending:', JSON.stringify(payload));
+      console.log('To URL:', scriptUrl);
+      await fetch(scriptUrl, {
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
       showToast('✓ '+id+' saved to Sheets!');
       addLog(currentStatus.toLowerCase(),id,inspector+' · '+checked+'/'+items.length+' checks',time);
-    } catch(e) { showToast('❌ Sync failed',true); }
+    } catch(e) {
+      console.error('Fetch error:', e);
+      showToast('❌ Sync failed: '+e.message, true);
+    }
   } else { showToast('⚠ Not connected!',true); }
   btn.disabled=false; btn.textContent='↑ SUBMIT TO GOOGLE SHEETS'; btn.classList.remove('syncing');
   if (currentMode==='phone') clearAsset(); else clearHandheld();
