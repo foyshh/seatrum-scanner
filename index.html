@@ -29,6 +29,63 @@
   onValue(inspectorsRef, (snapshot) => {
     window._inspectors = snapshot.val() ? Object.values(snapshot.val()) : [];
   });
+
+// ── PIN SYSTEM ──
+window._inspectors = [];
+let pinBuffer = '';
+
+function showPinModal() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.add('active');
+}
+
+function hidePinModal() {
+  document.getElementById('pin-overlay').classList.remove('active');
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+
+function verifyPin() {
+  const match = (window._inspectors || []).find(i => i && String(i.pin) === pinBuffer);
+  if (match) {
+    document.getElementById('inspector').value = match.name;
+    const disp = document.getElementById('inspector-display');
+    disp.textContent = '✓ ' + match.name;
+    disp.style.color = '#1a6b3a';
+    disp.style.fontWeight = '700';
+    showToast('✓ Welcome, ' + match.name + '!');
+    hidePinModal();
+  } else {
+    document.getElementById('pin-error').textContent = '✗ Incorrect PIN. Try again.';
+    pinBuffer = '';
+    updatePinDots();
+    const m = document.querySelector('.pin-modal');
+    m.style.transform = 'translateX(-8px)';
+    setTimeout(() => m.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => m.style.transform = 'translateX(0)', 160);
+  }
+}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -110,24 +167,13 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .s-btn.flag { background:#fff3cd; border-color:#f59e0b; color:#92400e; }
 .s-btn.fail { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
 
-.checklist-summary {
-  display:flex; align-items:center; justify-content:space-between;
-  background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:8px;
-  padding:10px 14px; cursor:pointer; margin-bottom:6px;
-  font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:#1a6b3a;
-  transition:background 0.15s;
-}
-.checklist-summary.has-fail { background:#fff0f0; border-color:#fca5a5; color:#dc2626; }
-.cl-arrow { font-size:10px; color:#888; transition:transform 0.2s; }
-.cl-arrow.open { transform:rotate(180deg); }
 .checklist { display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
 .cl { display:flex; align-items:center; gap:10px; padding:10px 12px; background:#f9f9f9; border:1.5px solid #ececec; border-radius:8px; cursor:pointer; }
-.cl { background:#fff0f0; border-color:#fca5a5; }
 .cl.checked { background:#f0fdf4; border-color:#bbf7d0; }
-.cl-box { width:20px; height:20px; border-radius:5px; border:2px solid #fca5a5; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:12px; transition:all 0.15s; color:#dc2626; }
+.cl-box { width:20px; height:20px; border-radius:5px; border:2px solid #ccc; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:12px; transition:all 0.15s; }
 .cl.checked .cl-box { background:#1a6b3a; border-color:#1a6b3a; color:#fff; }
-.cl-text { font-size:13px; color:#dc2626; font-weight:500; }
-.cl.checked .cl-text { color:#aaa; text-decoration:line-through; font-weight:400; }
+.cl-text { font-size:13px; color:#333; }
+.cl.checked .cl-text { color:#aaa; text-decoration:line-through; }
 
 .btn-submit { width:100%; padding:15px; background:#1a6b3a; color:#fff; border:none; border-radius:11px; font-family:'Space Mono',monospace; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; }
 .btn-submit:active { transform:scale(0.98); }
@@ -158,21 +204,21 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(70px); background:#1a6b3a; color:#fff; padding:13px 24px; border-radius:30px; font-family:'Space Mono',monospace; font-size:12px; opacity:0; transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 4px 24px rgba(0,0,0,0.25); z-index:999; max-width:90vw; text-align:center; }
 .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
 .toast.err { background:#dc2626; }
+
 /* PIN MODAL */
-.pin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:1000; align-items:center; justify-content:center; }
+.pin-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1000; align-items:center; justify-content:center; }
 .pin-overlay.active { display:flex; }
-.pin-modal { background:#fff; border-radius:16px; padding:28px 24px; width:320px; max-width:95vw; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
-.pin-title { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:#1a6b3a; letter-spacing:0.1em; margin-bottom:4px; }
-.pin-subtitle { font-size:12px; color:#888; margin-bottom:20px; }
-.pin-dots { display:flex; justify-content:center; gap:12px; margin-bottom:20px; }
+.pin-modal { background:#fff; border-radius:16px; padding:28px 24px; width:300px; max-width:92vw; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.pin-title { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:#1a6b3a; letter-spacing:0.1em; margin-bottom:4px; }
+.pin-subtitle { font-size:12px; color:#888; margin-bottom:18px; }
+.pin-dots { display:flex; justify-content:center; gap:14px; margin-bottom:20px; }
 .pin-dot { width:14px; height:14px; border-radius:50%; border:2px solid #ccc; background:#fff; transition:all 0.15s; }
 .pin-dot.filled { background:#1a6b3a; border-color:#1a6b3a; }
-.pin-pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
-.pin-btn { padding:16px; border-radius:10px; border:1.5px solid #e0e0e0; font-size:18px; font-weight:700; cursor:pointer; background:#fafafa; transition:all 0.1s; font-family:'Space Mono',monospace; }
+.pin-pad { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.pin-btn { padding:15px; border-radius:10px; border:1.5px solid #e0e0e0; font-size:18px; font-weight:700; cursor:pointer; background:#fafafa; transition:all 0.1s; font-family:'Space Mono',monospace; }
 .pin-btn:active { background:#1a6b3a; color:#fff; border-color:#1a6b3a; transform:scale(0.95); }
 .pin-clear { background:#fff0f0; border-color:#fca5a5; color:#dc2626; font-size:13px; }
-.pin-error { color:#dc2626; font-size:12px; font-family:'Space Mono',monospace; min-height:18px; margin-top:-8px; }
-.pin-name { color:#1a6b3a; font-weight:700; font-size:14px; min-height:18px; }
+.pin-error { color:#dc2626; font-size:12px; font-family:'Space Mono',monospace; min-height:16px; }
 </style>
 </head>
 <body>
@@ -246,9 +292,9 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 
       <!-- INSPECTOR -->
       <span class="field-label">Inspector</span>
-      <div id="inspector-display" onclick="showPinModal()" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa;font-size:14px;color:#888;margin-bottom:2px;">
-        <span id="inspector-name-display">🔐 Tap to verify identity</span>
-        <span style="font-size:11px;color:#1a6b3a;font-family:'Space Mono',monospace;">ENTER PIN ▶</span>
+      <div onclick="showPinModal()" style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border:1.5px solid #e0e0e0;border-radius:8px;cursor:pointer;background:#fafafa;margin-bottom:14px;">
+        <span id="inspector-display" style="font-size:14px;color:#888;">🔐 Tap to verify identity</span>
+        <span style="font-size:11px;color:#1a6b3a;font-family:'Space Mono',monospace;font-weight:700;">ENTER PIN ▶</span>
       </div>
       <input type="hidden" id="inspector" value="" />
 
@@ -262,16 +308,12 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 
       <!-- CHECKLIST -->
       <span class="field-label">Checklist</span>
-      <div class="checklist-summary" onclick="toggleChecklist()">
-        <span id="cl-score">5/5 ✓</span>
-        <span class="cl-arrow" id="cl-arrow">▼</span>
-      </div>
-      <div class="checklist" id="checklist-items" style="display:none;">
-        <div class="cl checked" onclick="tog(this);updateScore()"><div class="cl-box">✓</div><span class="cl-text">Visual damage/Leak check</span></div>
-        <div class="cl checked" onclick="tog(this);updateScore()"><div class="cl-box">✓</div><span class="cl-text">Short Length Hose & Flashback Arrester</span></div>
-        <div class="cl checked" onclick="tog(this);updateScore()"><div class="cl-box">✓</div><span class="cl-text">Torch Regulator</span></div>
-        <div class="cl checked" onclick="tog(this);updateScore()"><div class="cl-box">✓</div><span class="cl-text">Cutting Torch Condition</span></div>
-        <div class="cl checked" onclick="tog(this);updateScore()"><div class="cl-box">✓</div><span class="cl-text">Labels & tags legible</span></div>
+      <div class="checklist">
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Visual damage/Leak check</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Short Length Hose & Flashback Arrester</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Torch Regulator</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Cutting Torch Condition</span></div>
+        <div class="cl checked" onclick="tog(this)"><div class="cl-box">✓</div><span class="cl-text">Labels & tags legible</span></div>
       </div>
 
       <button class="btn-submit" id="btn-submit" onclick="submitScan()">↑ SUBMIT TO GOOGLE SHEETS</button>
@@ -295,35 +337,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
   </div>
 </div>
 
-<!-- PIN MODAL -->
-<div class="pin-overlay" id="pin-overlay">
-  <div class="pin-modal">
-    <div class="pin-title">🔐 INSPECTOR VERIFICATION</div>
-    <div class="pin-subtitle">Enter your 4-digit PIN to continue</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-    </div>
-    <div class="pin-pad">
-      <button class="pin-btn" onclick="pinPress('1')">1</button>
-      <button class="pin-btn" onclick="pinPress('2')">2</button>
-      <button class="pin-btn" onclick="pinPress('3')">3</button>
-      <button class="pin-btn" onclick="pinPress('4')">4</button>
-      <button class="pin-btn" onclick="pinPress('5')">5</button>
-      <button class="pin-btn" onclick="pinPress('6')">6</button>
-      <button class="pin-btn" onclick="pinPress('7')">7</button>
-      <button class="pin-btn" onclick="pinPress('8')">8</button>
-      <button class="pin-btn" onclick="pinPress('9')">9</button>
-      <button class="pin-btn pin-clear" onclick="pinClear()">⌫</button>
-      <button class="pin-btn" onclick="pinPress('0')">0</button>
-      <button class="pin-btn pin-clear" onclick="pinCancel()">✕</button>
-    </div>
-    <div class="pin-name" id="pin-name"></div>
-    <div class="pin-error" id="pin-error"></div>
-  </div>
-</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -332,73 +345,6 @@ let currentMode='phone';
 let scanBuffer='', scanTimer=null;
 window._machines = [];
 window._fbReady = false;
-
-// ── PIN SYSTEM ──
-window._inspectors = [];
-let pinBuffer = '';
-let pinCallback = null;
-
-function showPinModal() {
-  pinBuffer = '';
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-  document.getElementById('pin-name').textContent = '';
-  document.getElementById('pin-overlay').classList.add('active');
-}
-
-function hidePinModal() {
-  document.getElementById('pin-overlay').classList.remove('active');
-  pinBuffer = '';
-  updatePinDots();
-}
-
-function pinCancel() { hidePinModal(); }
-
-function pinClear() {
-  pinBuffer = pinBuffer.slice(0, -1);
-  updatePinDots();
-  document.getElementById('pin-error').textContent = '';
-  document.getElementById('pin-name').textContent = '';
-}
-
-function updatePinDots() {
-  for (let i = 0; i < 4; i++) {
-    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
-  }
-}
-
-function pinPress(digit) {
-  if (pinBuffer.length >= 4) return;
-  pinBuffer += digit;
-  updatePinDots();
-  if (pinBuffer.length === 4) {
-    setTimeout(verifyPin, 150);
-  }
-}
-
-function verifyPin() {
-  const inspectors = window._inspectors || [];
-  const match = inspectors.find(i => i && String(i.pin) === pinBuffer);
-  if (match) {
-    document.getElementById('inspector').value = match.name;
-    document.getElementById('inspector-name-display').textContent = '✓ ' + match.name;
-    document.getElementById('inspector-name-display').style.color = '#1a6b3a';
-    document.getElementById('inspector-name-display').style.fontWeight = '700';
-    showToast('✓ Welcome, ' + match.name + '!');
-    hidePinModal();
-  } else {
-    document.getElementById('pin-error').textContent = '✗ Incorrect PIN. Try again.';
-    document.getElementById('pin-name').textContent = '';
-    pinBuffer = '';
-    updatePinDots();
-    // Shake effect
-    const modal = document.querySelector('.pin-modal');
-    modal.style.animation = 'none';
-    modal.style.transform = 'translateX(-8px)';
-    setTimeout(() => modal.style.transform = 'translateX(8px)', 80);
-    setTimeout(() => modal.style.transform = 'translateX(0)', 160);
-  }
-}
 
 function tick() {
   document.getElementById('clock').textContent =
@@ -426,46 +372,25 @@ function cleanId(raw) {
 }
 
 function getMachineData(id) {
-  if (!window._machines || !id) return null;
-  const clean = id.trim().toUpperCase();
-  return window._machines.find(m => m && m.id && m.id.trim().toUpperCase() === clean) || null;
+  if (!window._machines) return null;
+  return window._machines.find(m => m.id === id) || null;
 }
 
 window.addEventListener('load',function() {
   const params=new URLSearchParams(window.location.search);
   const raw=params.get('id');
-  if (raw) {
-    const id=cleanId(raw);
-    setAsset(id);
-    showToast('📷 Loaded: '+id);
-    // Keep retrying to fill machine name once Firebase is ready
-    let tries=0;
-    const interval=setInterval(()=>{
-      tries++;
-      const m=getMachineData(id);
-      if (m) {
-        document.getElementById('banner-name').textContent=m.name+(m.loc?' · 📍'+m.loc:'');
-        showDueDate(id,'due-banner','due-icon','due-text');
-        clearInterval(interval);
-      }
-      if (tries>10) clearInterval(interval);
-    },500);
-  }
+  if (raw) { const id=cleanId(raw); setAsset(id); showToast('📷 Loaded: '+id); }
 });
 
 function setAsset(id) {
   currentAssetId=id;
   document.getElementById('banner-id').textContent=id;
+  // Show machine name if available from Firebase
+  const m = getMachineData(id);
+  document.getElementById('banner-name').textContent = m ? m.name+' · 📍'+m.loc : '';
   document.getElementById('asset-banner').style.display='block';
   document.getElementById('waiting-state').style.display='none';
-  // Try immediately, then retry after Firebase loads
-  function tryFill() {
-    const m = getMachineData(id);
-    document.getElementById('banner-name').textContent = m ? m.name+(m.loc?' · 📍'+m.loc:'') : '';
-    showDueDate(id,'due-banner','due-icon','due-text');
-  }
-  tryFill();
-  setTimeout(tryFill, 1500); // retry after Firebase ready
+  showDueDate(id,'due-banner','due-icon','due-text');
 }
 
 function showDueDate(id, bannerId, iconId, textId) {
@@ -556,44 +481,7 @@ function setStatus(s) {
   document.getElementById('s-flag').className='s-btn'+(s==='FLAG'?' flag':'');
   document.getElementById('s-fail').className='s-btn'+(s==='FAIL'?' fail':'');
 }
-function toggleChecklist() {
-  const items = document.getElementById('checklist-items');
-  const arrow = document.getElementById('cl-arrow');
-  const open = items.style.display !== 'none';
-  items.style.display = open ? 'none' : 'flex';
-  items.style.flexDirection = 'column';
-  items.style.gap = '7px';
-  items.style.marginBottom = '8px';
-  arrow.classList.toggle('open', !open);
-}
-
-function updateScore() {
-  const items = document.querySelectorAll('.cl');
-  const checked = [...items].filter(i => i.classList.contains('checked')).length;
-  const total = items.length;
-  const scoreEl = document.getElementById('cl-score');
-  const summary = scoreEl.closest('.checklist-summary');
-  if (checked === total) {
-    scoreEl.textContent = total+'/'+total+' ✓ All passed';
-    summary.classList.remove('has-fail');
-  } else {
-    const failed = [...items].filter(i => !i.classList.contains('checked')).map(i => i.querySelector('.cl-text').textContent);
-    scoreEl.textContent = checked+'/'+total+' — '+failed.length+' issue(s)';
-    summary.classList.add('has-fail');
-  }
-}
-
 function tog(el) { el.classList.toggle('checked'); el.querySelector('.cl-box').textContent=el.classList.contains('checked')?'✓':''; }
-
-function getChecklistDetail() {
-  const items = document.querySelectorAll('.cl');
-  const results = [...items].map(i => {
-    const name = i.querySelector('.cl-text').textContent;
-    const pass = i.classList.contains('checked');
-    return (pass ? '✓' : '✗') + ' ' + name;
-  });
-  return results.join(' | ');
-}
 
 function getDueDateForId(id) {
   const m=getMachineData(id);
@@ -602,10 +490,9 @@ function getDueDateForId(id) {
 
 async function submitScan() {
   if (!currentAssetId) { showToast('⚠ Scan a QR code first!',true); return; }
-  const inspectorVal = document.getElementById('inspector').value;
-  if (!inspectorVal) { showToast('⚠ Please verify your PIN first!',true); showPinModal(); return; }
+  if (!document.getElementById('inspector').value) { showToast('⚠ Please verify your PIN first!',true); showPinModal(); return; }
   const id=cleanId(currentAssetId);
-  const inspector=document.getElementById('inspector').value || 'Unknown';
+  const inspector=document.getElementById('inspector').value;
   const items=document.querySelectorAll('.cl');
   const checked=[...items].filter(i=>i.classList.contains('checked')).length;
   const now=new Date();
@@ -616,44 +503,18 @@ async function submitScan() {
   btn.disabled=true; btn.textContent='⏳ Sending...'; btn.classList.add('syncing');
   if (scriptUrl) {
     try {
-      const machineData = getMachineData(id);
-      const payload = {
-        assetId:id,
-        machineName:machineData?machineData.name:'',
-        category:machineData?machineData.cat:'',
-        date, time, inspector,
-        checklist:getChecklistDetail(),
-        checklistScore:`${checked}/${items.length}`,
-        status:currentStatus,
-        dueDate:getDueDateForId(id)
-      };
-      console.log('Sending:', JSON.stringify(payload));
-      console.log('To URL:', scriptUrl);
-      await fetch(scriptUrl, {
-        method:'POST',
-        mode:'no-cors',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(payload)
-      });
+      await fetch(scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({assetId:id,machineName:'',category:'',date,time,inspector,checklist:`${checked}/${items.length}`,status:currentStatus,dueDate:getDueDateForId(id)})});
       showToast('✓ '+id+' saved to Sheets!');
       addLog(currentStatus.toLowerCase(),id,inspector+' · '+checked+'/'+items.length+' checks',time);
-    } catch(e) {
-      console.error('Fetch error:', e);
-      showToast('❌ Sync failed: '+e.message, true);
-    }
+    } catch(e) { showToast('❌ Sync failed',true); }
   } else { showToast('⚠ Not connected!',true); }
   btn.disabled=false; btn.textContent='↑ SUBMIT TO GOOGLE SHEETS'; btn.classList.remove('syncing');
-  // Reset inspector for next scan
   document.getElementById('inspector').value='';
-  document.getElementById('inspector-name-display').textContent='🔐 Tap to verify identity';
-  document.getElementById('inspector-name-display').style.color='#888';
-  document.getElementById('inspector-name-display').style.fontWeight='400';
+  document.getElementById('inspector-display').textContent='🔐 Tap to verify identity';
+  document.getElementById('inspector-display').style.color='#888';
+  document.getElementById('inspector-display').style.fontWeight='400';
   if (currentMode==='phone') clearAsset(); else clearHandheld();
   document.querySelectorAll('.cl').forEach(el=>{ el.classList.add('checked'); el.querySelector('.cl-box').textContent='✓'; });
-  updateScore();
-  // Close dropdown
-  document.getElementById('checklist-items').style.display='none';
-  document.getElementById('cl-arrow').classList.remove('open');
   setStatus('PASS');
   if (currentMode==='handheld') setTimeout(()=>document.getElementById('scan-input').focus(),100);
 }
@@ -672,6 +533,149 @@ function showToast(msg,err=false) {
   t.textContent=msg; t.className='toast show'+(err?' err':'');
   clearTimeout(tt); tt=setTimeout(()=>t.className='toast',3500);
 }
+
+// ── PIN SYSTEM ──
+window._inspectors = [];
+let pinBuffer = '';
+
+function showPinModal() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.add('active');
+}
+
+function hidePinModal() {
+  document.getElementById('pin-overlay').classList.remove('active');
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+
+function verifyPin() {
+  const match = (window._inspectors || []).find(i => i && String(i.pin) === pinBuffer);
+  if (match) {
+    document.getElementById('inspector').value = match.name;
+    const disp = document.getElementById('inspector-display');
+    disp.textContent = '✓ ' + match.name;
+    disp.style.color = '#1a6b3a';
+    disp.style.fontWeight = '700';
+    showToast('✓ Welcome, ' + match.name + '!');
+    hidePinModal();
+  } else {
+    document.getElementById('pin-error').textContent = '✗ Incorrect PIN. Try again.';
+    pinBuffer = '';
+    updatePinDots();
+    const m = document.querySelector('.pin-modal');
+    m.style.transform = 'translateX(-8px)';
+    setTimeout(() => m.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => m.style.transform = 'translateX(0)', 160);
+  }
+}
+
+// ── PIN SYSTEM ──
+window._inspectors = [];
+let pinBuffer = '';
+
+function showPinModal() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.add('active');
+}
+
+function hidePinModal() {
+  document.getElementById('pin-overlay').classList.remove('active');
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+
+function verifyPin() {
+  const match = (window._inspectors || []).find(i => i && String(i.pin) === pinBuffer);
+  if (match) {
+    document.getElementById('inspector').value = match.name;
+    const disp = document.getElementById('inspector-display');
+    disp.textContent = '✓ ' + match.name;
+    disp.style.color = '#1a6b3a';
+    disp.style.fontWeight = '700';
+    showToast('✓ Welcome, ' + match.name + '!');
+    hidePinModal();
+  } else {
+    document.getElementById('pin-error').textContent = '✗ Incorrect PIN. Try again.';
+    pinBuffer = '';
+    updatePinDots();
+    const m = document.querySelector('.pin-modal');
+    m.style.transform = 'translateX(-8px)';
+    setTimeout(() => m.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => m.style.transform = 'translateX(0)', 160);
+  }
+}
 </script>
+
+<!-- PIN MODAL -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-modal">
+    <div class="pin-title">🔐 INSPECTOR VERIFICATION</div>
+    <div class="pin-subtitle">Enter your 4-digit PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn pin-clear" onclick="pinClear()">⌫</button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn pin-clear" onclick="hidePinModal()">✕</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
 </body>
 </html>
