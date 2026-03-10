@@ -7,7 +7,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-  
+  // ── PASTE YOUR FIREBASE CONFIG HERE ──
   const firebaseConfig = {
     apiKey: "AIzaSyAfRk68ULes8efF9XmGH-jmMQAwTCdG084",
     authDomain: "seatrium-scanner.firebaseapp.com",
@@ -15,21 +15,77 @@
     projectId: "seatrium-scanner",
     storageBucket: "seatrium-scanner.firebasestorage.app",
     messagingSenderId: "45354259398",
-    appId: "1:45354259398:web:17781f783475a4067498c7"
+    appId: "1:45354259398:web:17781f783475a4067498c7",
+    measurementId: "G-FZMM1W8L4Q"
   };
-  
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
-  
   const machinesRef = ref(db, 'machines');
   onValue(machinesRef, (snapshot) => {
     window._machines = snapshot.val() ? Object.values(snapshot.val()) : [];
+    window._fbReady = true;
   });
-  
   const inspectorsRef = ref(db, 'inspectors');
   onValue(inspectorsRef, (snapshot) => {
     window._inspectors = snapshot.val() ? Object.values(snapshot.val()) : [];
   });
+
+// ── PIN SYSTEM ──
+window._inspectors = [];
+let pinBuffer = '';
+
+function showPinModal() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.add('active');
+}
+
+function hidePinModal() {
+  document.getElementById('pin-overlay').classList.remove('active');
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+
+function verifyPin() {
+  const match = (window._inspectors || []).find(i => i && String(i.pin) === pinBuffer);
+  if (match) {
+    document.getElementById('inspector').value = match.name;
+    const disp = document.getElementById('inspector-display');
+    disp.textContent = '✓ ' + match.name;
+    disp.style.color = '#1a6b3a';
+    disp.style.fontWeight = '700';
+    showToast('✓ Welcome, ' + match.name + '!');
+    hidePinModal();
+  } else {
+    document.getElementById('pin-error').textContent = '✗ Incorrect PIN. Try again.';
+    pinBuffer = '';
+    updatePinDots();
+    const m = document.querySelector('.pin-modal');
+    m.style.transform = 'translateX(-8px)';
+    setTimeout(() => m.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => m.style.transform = 'translateX(0)', 160);
+  }
+}
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -102,6 +158,8 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .btn-clear { background:none; border:none; cursor:pointer; color:#999; font-size:16px; }
 
 .field-label { font-family:'Space Mono',monospace; font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:#888; margin-bottom:5px; display:block; }
+.select { width:100%; padding:10px 13px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:14px; color:#1a1814; background:#fafafa; outline:none; cursor:pointer; margin-bottom:14px; }
+.select:focus { border-color:#1a6b3a; }
 
 .status-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:16px; }
 .s-btn { padding:11px 6px; border-radius:8px; border:2px solid #e0e0e0; font-family:'Space Mono',monospace; font-size:11px; font-weight:700; cursor:pointer; background:#fafafa; text-align:center; transition:all 0.15s; }
@@ -281,40 +339,12 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 
 <div class="toast" id="toast"></div>
 
-<!-- PIN MODAL -->
-<div class="pin-overlay" id="pin-overlay">
-  <div class="pin-modal">
-    <div class="pin-title">🔐 INSPECTOR VERIFICATION</div>
-    <div class="pin-subtitle">Enter your 4-digit PIN</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div>
-      <div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div>
-      <div class="pin-dot" id="pd3"></div>
-    </div>
-    <div class="pin-pad">
-      <button class="pin-btn" onclick="pinPress('1')">1</button>
-      <button class="pin-btn" onclick="pinPress('2')">2</button>
-      <button class="pin-btn" onclick="pinPress('3')">3</button>
-      <button class="pin-btn" onclick="pinPress('4')">4</button>
-      <button class="pin-btn" onclick="pinPress('5')">5</button>
-      <button class="pin-btn" onclick="pinPress('6')">6</button>
-      <button class="pin-btn" onclick="pinPress('7')">7</button>
-      <button class="pin-btn" onclick="pinPress('8')">8</button>
-      <button class="pin-btn" onclick="pinPress('9')">9</button>
-      <button class="pin-btn pin-clear" onclick="pinClear()">⌫</button>
-      <button class="pin-btn" onclick="pinPress('0')">0</button>
-      <button class="pin-btn pin-clear" onclick="hidePinModal()">✕</button>
-    </div>
-    <div class="pin-error" id="pin-error"></div>
-  </div>
-</div>
-
 <script>
 let scriptUrl='', currentStatus='PASS', currentAssetId='', logCount=0;
 let currentMode='phone';
 let scanBuffer='', scanTimer=null;
 window._machines = [];
+window._fbReady = false;
 
 function tick() {
   document.getElementById('clock').textContent =
@@ -335,10 +365,7 @@ function setMode(m) {
 function cleanId(raw) {
   let id=decodeURIComponent(String(raw)).trim().toUpperCase();
   if (id.startsWith('HTTPS')||id.startsWith('HTTP')) {
-    try { 
-      const url = new URL(raw);
-      id = url.searchParams.get('id')?.toUpperCase() || id;
-    } catch(e) {}
+    try { id=new URL(raw.toLowerCase()).searchParams.get('id').toUpperCase(); } catch(e) {}
   }
   if (id.includes('?ID=')) id=id.split('?ID=').pop();
   return id;
@@ -353,21 +380,12 @@ window.addEventListener('load',function() {
   const params=new URLSearchParams(window.location.search);
   const raw=params.get('id');
   if (raw) { const id=cleanId(raw); setAsset(id); showToast('📷 Loaded: '+id); }
-  
-  // Load saved URL
-  const saved=localStorage.getItem('seatrium_url');
-  if (saved) {
-    scriptUrl=saved;
-    document.getElementById('script-url').value=saved;
-    document.getElementById('dot').className='dot on';
-    document.getElementById('conn-text').textContent='Connected to Google Sheets ✓';
-    document.getElementById('setup-bar').classList.add('hidden');
-  }
 });
 
 function setAsset(id) {
   currentAssetId=id;
   document.getElementById('banner-id').textContent=id;
+  // Show machine name if available from Firebase
   const m = getMachineData(id);
   document.getElementById('banner-name').textContent = m ? m.name+' · 📍'+m.loc : '';
   document.getElementById('asset-banner').style.display='block';
@@ -411,17 +429,8 @@ document.addEventListener('keydown',function(e) {
   if (currentMode!=='handheld') return;
   if (['script-url','manual-input'].includes(document.activeElement?.id)) return;
   if (document.activeElement?.tagName==='SELECT') return;
-  if (e.key==='Enter') { 
-    const val=scanBuffer.trim()||document.getElementById('scan-input').value.trim(); 
-    if(val.length>1) setHandheldId(val); 
-    scanBuffer=''; 
-    return; 
-  }
-  if (e.key.length===1) { 
-    scanBuffer+=e.key; 
-    clearTimeout(scanTimer); 
-    scanTimer=setTimeout(()=>{scanBuffer='';},100);
-  }
+  if (e.key==='Enter') { const val=scanBuffer.trim()||document.getElementById('scan-input').value.trim(); if(val.length>1) setHandheldId(val); scanBuffer=''; return; }
+  if (e.key.length===1) { scanBuffer+=e.key; clearTimeout(scanTimer); scanTimer=setTimeout(()=>{scanBuffer='';},100); }
 });
 document.getElementById('scan-input').addEventListener('keydown',function(e){ if(e.key==='Enter'&&this.value.trim()) setHandheldId(this.value.trim()); });
 document.getElementById('scan-input').addEventListener('paste',function(){ setTimeout(()=>{ if(this.value.trim().length>1) setHandheldId(this.value.trim()); },50); });
@@ -451,11 +460,19 @@ function connect() {
   const url=document.getElementById('script-url').value.trim();
   if (!url.startsWith('https://script.google.com')) { showToast('⚠ Invalid URL',true); return; }
   scriptUrl=url;
-  localStorage.setItem('seatrium_url',url);
+  localStorage.setItem('seatrum_url',url);
   document.getElementById('dot').className='dot on';
   document.getElementById('conn-text').textContent='Connected to Google Sheets ✓';
   document.getElementById('setup-bar').classList.add('hidden');
   showToast('✓ Connected!');
+}
+const saved=localStorage.getItem('seatrum_url');
+if (saved) {
+  scriptUrl=saved;
+  document.getElementById('script-url').value=saved;
+  document.getElementById('dot').className='dot on';
+  document.getElementById('conn-text').textContent='Connected to Google Sheets ✓';
+  document.getElementById('setup-bar').classList.add('hidden');
 }
 
 function setStatus(s) {
@@ -472,9 +489,8 @@ function getDueDateForId(id) {
 }
 
 async function submitScan() {
-  if (!currentAssetId) { showToast('⚠ Scan a QR code first!', true); return; }
-  if (!document.getElementById('inspector').value) { showToast('⚠ Please verify your PIN first!', true); showPinModal(); return; }
-  
+  if (!currentAssetId) { showToast('⚠ Scan a QR code first!',true); return; }
+  if (!document.getElementById('inspector').value) { showToast('⚠ Please verify your PIN first!',true); showPinModal(); return; }
   const id=cleanId(currentAssetId);
   const inspector=document.getElementById('inspector').value;
   const items=document.querySelectorAll('.cl');
@@ -485,57 +501,20 @@ async function submitScan() {
   const time=now.toLocaleTimeString('en-SG',sg);
   const btn=document.getElementById('btn-submit');
   btn.disabled=true; btn.textContent='⏳ Sending...'; btn.classList.add('syncing');
-  
   if (scriptUrl) {
     try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('assetId', id);
-      formData.append('machineName', getMachineData(id)?.name || '');
-      formData.append('category', getMachineData(id)?.cat || '');
-      formData.append('date', date);
-      formData.append('time', time);
-      formData.append('inspector', inspector);
-      formData.append('checklist', `${checked}/${items.length}`);
-      formData.append('status', currentStatus);
-      formData.append('dueDate', getDueDateForId(id));
-      
-      const response = await fetch(scriptUrl, {
-        method: 'POST',
-        body: formData,
-        mode: 'cors'  // Important: use cors, not no-cors
-      });
-      
-      if (response.ok) {
-        const text = await response.text();
-        showToast('✓ '+id+' saved to Sheets!');
-        addLog(currentStatus.toLowerCase(),id,inspector+' · '+checked+'/'+items.length+' checks',time);
-      } else {
-        showToast('❌ HTTP error: ' + response.status, true);
-      }
-    } catch(e) { 
-      console.error('Submission error:', e);
-      showToast('❌ Sync failed: ' + e.message, true); 
-    }
-  } else { 
-    showToast('⚠ Not connected!', true); 
-  }
-  
+      await fetch(scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({assetId:id,machineName:'',category:'',date,time,inspector,checklist:`${checked}/${items.length}`,status:currentStatus,dueDate:getDueDateForId(id)})});
+      showToast('✓ '+id+' saved to Sheets!');
+      addLog(currentStatus.toLowerCase(),id,inspector+' · '+checked+'/'+items.length+' checks',time);
+    } catch(e) { showToast('❌ Sync failed',true); }
+  } else { showToast('⚠ Not connected!',true); }
   btn.disabled=false; btn.textContent='↑ SUBMIT TO GOOGLE SHEETS'; btn.classList.remove('syncing');
-  
-  // Reset form
   document.getElementById('inspector').value='';
   document.getElementById('inspector-display').textContent='🔐 Tap to verify identity';
   document.getElementById('inspector-display').style.color='#888';
   document.getElementById('inspector-display').style.fontWeight='400';
-  
   if (currentMode==='phone') clearAsset(); else clearHandheld();
-  
-  document.querySelectorAll('.cl').forEach(el=>{ 
-    el.classList.add('checked'); 
-    el.querySelector('.cl-box').textContent='✓'; 
-  });
-  
+  document.querySelectorAll('.cl').forEach(el=>{ el.classList.add('checked'); el.querySelector('.cl-box').textContent='✓'; });
   setStatus('PASS');
   if (currentMode==='handheld') setTimeout(()=>document.getElementById('scan-input').focus(),100);
 }
@@ -555,7 +534,65 @@ function showToast(msg,err=false) {
   clearTimeout(tt); tt=setTimeout(()=>t.className='toast',3500);
 }
 
-// PIN System
+// ── PIN SYSTEM ──
+window._inspectors = [];
+let pinBuffer = '';
+
+function showPinModal() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('pin-overlay').classList.add('active');
+}
+
+function hidePinModal() {
+  document.getElementById('pin-overlay').classList.remove('active');
+  pinBuffer = '';
+  updatePinDots();
+}
+
+function pinClear() {
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i).classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(verifyPin, 150);
+}
+
+function verifyPin() {
+  const match = (window._inspectors || []).find(i => i && String(i.pin) === pinBuffer);
+  if (match) {
+    document.getElementById('inspector').value = match.name;
+    const disp = document.getElementById('inspector-display');
+    disp.textContent = '✓ ' + match.name;
+    disp.style.color = '#1a6b3a';
+    disp.style.fontWeight = '700';
+    showToast('✓ Welcome, ' + match.name + '!');
+    hidePinModal();
+  } else {
+    document.getElementById('pin-error').textContent = '✗ Incorrect PIN. Try again.';
+    pinBuffer = '';
+    updatePinDots();
+    const m = document.querySelector('.pin-modal');
+    m.style.transform = 'translateX(-8px)';
+    setTimeout(() => m.style.transform = 'translateX(8px)', 80);
+    setTimeout(() => m.style.transform = 'translateX(0)', 160);
+  }
+}
+
+// ── PIN SYSTEM ──
+window._inspectors = [];
 let pinBuffer = '';
 
 function showPinModal() {
@@ -611,5 +648,34 @@ function verifyPin() {
   }
 }
 </script>
+
+<!-- PIN MODAL -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-modal">
+    <div class="pin-title">🔐 INSPECTOR VERIFICATION</div>
+    <div class="pin-subtitle">Enter your 4-digit PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn pin-clear" onclick="pinClear()">⌫</button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn pin-clear" onclick="hidePinModal()">✕</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
 </body>
 </html>
