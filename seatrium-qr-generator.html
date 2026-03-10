@@ -35,11 +35,6 @@
     const data = snapshot.val();
     window._syncFromFirebase(data);
   });
-  const inspectorsRef = ref(db, 'inspectors');
-  onValue(inspectorsRef, (snapshot) => {
-    window._inspectors = snapshot.val() ? snapshot.val() : {};
-    window._renderInspectors && window._renderInspectors();
-  });
   window._firebaseReady = true;
 </script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -142,20 +137,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
 .empty { text-align:center; padding:50px 20px; font-family:'Space Mono',monospace; font-size:12px; color:#bbb; background:#fff; border-radius:12px; }
 .empty-icon { font-size:36px; margin-bottom:10px; display:block; opacity:0.4; }
 
-/* INSPECTOR MANAGEMENT */
-.inspector-section { background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,0.07); padding:20px 24px; margin-bottom:20px; }
-.inspector-title { font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:#1a6b3a; letter-spacing:0.1em; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
-.inspector-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
-.inspector-row { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#f9f9f9; border-radius:8px; border:1.5px solid #e8f4ed; }
-.inspector-row-name { font-weight:600; font-size:14px; flex:1; }
-.inspector-row-pin { font-family:'Space Mono',monospace; font-size:13px; color:#888; background:#f0f0f0; padding:3px 10px; border-radius:6px; letter-spacing:0.2em; }
-.inspector-row-del { background:none; border:none; color:#dc2626; cursor:pointer; font-size:16px; padding:4px 8px; border-radius:6px; }
-.inspector-row-del:hover { background:#fff0f0; }
-.inspector-add-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.inspector-input { flex:1; min-width:120px; padding:9px 12px; border:1.5px solid #e0e0e0; border-radius:8px; font-size:14px; }
-.inspector-pin-input { width:90px; padding:9px 12px; border:1.5px solid #e0e0e0; border-radius:8px; font-family:'Space Mono',monospace; font-size:14px; letter-spacing:0.2em; }
-.inspector-empty { color:#aaa; font-size:13px; text-align:center; padding:16px; }
-
 @media print {
   .header,.url-bar,.form-card,.list-header,.btn-del,.btn-edit,.card-foot,.fb-setup { display:none !important; }
   body { background:#fff; }
@@ -255,19 +236,6 @@ body { font-family:'DM Sans',sans-serif; background:#f0f4f0; min-height:100vh; }
     </div>
   </div>
 
-  <!-- INSPECTOR MANAGEMENT -->
-  <div class="inspector-section">
-    <div class="inspector-title">🔐 Inspector PIN Management</div>
-    <div class="inspector-list" id="inspector-list">
-      <div class="inspector-empty">No inspectors added yet.</div>
-    </div>
-    <div class="inspector-add-row">
-      <input class="inspector-input" id="insp-name" placeholder="Inspector name" />
-      <input class="inspector-pin-input" id="insp-pin" placeholder="PIN" maxlength="4" type="password" />
-      <button type="button" class="btn-add" onclick="addInspector()">+ Add</button>
-    </div>
-  </div>
-
   <div class="list-header">
     <span class="list-title">Generated QR Codes</span>
     <span class="count-badge" id="count">0 machines</span>
@@ -330,54 +298,6 @@ let machines = [];
 let firebaseReady = false;
 
 // Set default due date (15 days) on page load
-// ── INSPECTOR MANAGEMENT ──
-window._inspectors = {};
-
-window._renderInspectors = function() {
-  const list = document.getElementById('inspector-list');
-  if (!list) return;
-  const inspectors = Object.values(window._inspectors || {});
-  if (inspectors.length === 0) {
-    list.innerHTML = '<div class="inspector-empty">No inspectors added yet.</div>';
-    return;
-  }
-  list.innerHTML = inspectors.map(i => `
-    <div class="inspector-row">
-      <span class="inspector-row-name">${i.name}</span>
-      <span class="inspector-row-pin">****</span>
-      <button class="inspector-row-del" onclick="deleteInspector('${i.id}')" title="Delete">🗑</button>
-    </div>
-  `).join('');
-};
-
-function addInspector() {
-  const name = document.getElementById('insp-name').value.trim();
-  const pin = document.getElementById('insp-pin').value.trim();
-  if (!name) { showToast('⚠ Enter inspector name', true); return; }
-  if (!/^[0-9]{4}$/.test(pin)) { showToast('⚠ PIN must be exactly 4 digits', true); return; }
-  // Check duplicate PIN
-  const existing = Object.values(window._inspectors || {});
-  if (existing.find(i => String(i.pin) === pin)) { showToast('⚠ PIN already in use', true); return; }
-  const id = 'insp_' + Date.now();
-  const inspector = { id, name, pin };
-  if (!window._fbSet || !window._db) { showToast('⚠ Firebase not ready', true); return; }
-  window._fbSet(window._fbRef(window._db, 'inspectors/' + id), inspector)
-    .then(() => {
-      showToast('✓ Inspector ' + name + ' added');
-      document.getElementById('insp-name').value = '';
-      document.getElementById('insp-pin').value = '';
-    })
-    .catch(e => showToast('⚠ Error: ' + e.message, true));
-}
-
-function deleteInspector(id) {
-  if (!confirm('Remove this inspector?')) return;
-  if (!window._fbRemove || !window._db) return;
-  window._fbRemove(window._fbRef(window._db, 'inspectors/' + id))
-    .then(() => showToast('✓ Inspector removed'))
-    .catch(e => showToast('⚠ Error: ' + e.message, true));
-}
-
 window.addEventListener('load', () => {
   selectDue(15, null, 'add-presets', 'in-due');
 });
@@ -645,3 +565,4 @@ function showToast(msg, err=false) {
 </script>
 </body>
 </html>
+
